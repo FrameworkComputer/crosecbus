@@ -1,7 +1,7 @@
 #include "precomp.h"
 
-#include <initguid.h>  // emit the GUIDs in CrosEC into our own binary...
-#include "../CrosEC/Public.h"
+#include <initguid.h>  // emit the GUIDs in CrosECBus into our own binary...
+//#include "../crosecbus/Public.h"
 
 #pragma region WIL Extensions
 namespace wil::details {
@@ -64,8 +64,10 @@ static constexpr std::wstring_view gCrosECDeviceNode{gCrosECDeviceNodeHwidList.s
 static HRESULT Install() {
 	BOOL reboot{FALSE};
 
-	std::filesystem::path infPath{L"CrosEC.inf"};
+	std::filesystem::path infPath{L"crosecbus.inf"};
 	infPath = std::filesystem::absolute(infPath);
+
+	fwprintf(stderr, L"  Absolute INF path: %s ", infPath.c_str());
 
 	GUID ClassGUID;
 	WCHAR ClassName[256];
@@ -73,23 +75,29 @@ static HRESULT Install() {
 		SetupDiGetINFClassW(infPath.native().c_str(), &ClassGUID, ClassName, (DWORD)std::size(ClassName), 0));
 
 	unique_hdevinfo DeviceInfoSet;
+	fwprintf(stderr, L"  SetupDiCreateDeviceInfoList\n");
 	DeviceInfoSet.reset(SetupDiCreateDeviceInfoList(&ClassGUID, 0));
 	RETURN_HR_IF(E_FAIL, !DeviceInfoSet);
 
 	SP_DEVINFO_DATA DeviceInfoData{};
 	DeviceInfoData.cbSize = sizeof(SP_DEVINFO_DATA);
+	fwprintf(stderr, L"  SetupDiCreateDeviceInfoW\n");
 	RETURN_IF_WIN32_BOOL_FALSE(SetupDiCreateDeviceInfoW(DeviceInfoSet.get(), ClassName, &ClassGUID, nullptr, 0,
 	                                                    DICD_GENERATE_ID, &DeviceInfoData));
 
+	fwprintf(stderr, L"  SetupDiSetDeviceRegistryPropertyW\n");
 	RETURN_IF_WIN32_BOOL_FALSE(SetupDiSetDeviceRegistryPropertyW(
 		DeviceInfoSet.get(), &DeviceInfoData, SPDRP_HARDWAREID, (LPBYTE)gCrosECDeviceNodeHwidList.data(),
 		(DWORD)(gCrosECDeviceNodeHwidList.size() * sizeof(WCHAR))));
 
+	fwprintf(stderr, L"  SetupDiCallClassInstaller\n");
 	RETURN_IF_WIN32_BOOL_FALSE(SetupDiCallClassInstaller(DIF_REGISTERDEVICE, DeviceInfoSet.get(), &DeviceInfoData));
 
+	fwprintf(stderr, L"  UpdateDriverForPlugAndPlayDevicesW\n");
 	RETURN_IF_WIN32_BOOL_FALSE(UpdateDriverForPlugAndPlayDevicesW(nullptr, gCrosECDeviceNodeHwidList.data(),
 	                                                              infPath.native().c_str(), 0, &reboot));
 
+	fwprintf(stderr, L"  Install Finished\n");
 	return reboot ? S_REBOOT : S_OK;
 }
 
@@ -144,12 +152,12 @@ static HRESULT RemoveCrosECDeviceNode() {
 }
 
 static HRESULT Remove() {
-	std::filesystem::path infPath{L"CrosEC.inf"};
+	std::filesystem::path infPath{L"crosecbus.inf"};
 	infPath = std::filesystem::absolute(infPath);
 
 	RETURN_IF_FAILED(RemoveCrosECDeviceNode());
 
-	fwprintf(stderr, L"[+] Removing CrosEC.inf... ");
+	fwprintf(stderr, L"[+] Removing crosecbus.inf... ");
 	BOOL reboot;
 	if(!DiUninstallDriverW(nullptr, infPath.native().c_str(), 0, &reboot)) {
 		auto lastError{GetLastError()};
