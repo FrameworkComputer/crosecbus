@@ -164,8 +164,6 @@ Status
 	for (ULONG i = 0; i < resourceCount; i++)
 	{
 		PCM_PARTIAL_RESOURCE_DESCRIPTOR pDescriptor, pDescriptorRaw;
-		UCHAR Class;
-		UCHAR Type;
 
 		pDescriptor = WdfCmResourceListGetDescriptor(
 			FxResourcesTranslated, i);
