@@ -22,6 +22,7 @@ PnpLockdown = 1
 
 [DestinationDirs]
 DefaultDestDir = 12
+CrosEC_Device_CoInstaller_CopyFiles = 11
 
 ; ================= Class section =====================
 
@@ -30,6 +31,7 @@ DefaultDestDir = 12
 
 [SourceDisksFiles]
 crosecbus.sys  = 1,,
+WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll=1 ; make sure the number matches with SourceDisksNames
 
 ;*****************************************
 ; CrosEcBus  Install Section
@@ -41,7 +43,7 @@ crosecbus.sys  = 1,,
 ; Decorated model section take precedence over undecorated 
 ; ones on XP and later.
 [Standard.NT$ARCH$]
-%CrosEcBus.DeviceDesc%=CrosEcBus_Device, ACPI\GOOG0004
+%CrosEcBus.DeviceDesc%=CrosEcBus_Device, Root\CrosEc
 
 [CrosEcBus_Device.NT]
 CopyFiles=Drivers_Dir
