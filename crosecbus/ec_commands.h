@@ -54,7 +54,7 @@
 #define EC_LPC_CMDR_SCI		(1 << 5)  /* SCI event is pending */
 #define EC_LPC_CMDR_SMI		(1 << 6)  /* SMI event is pending */
 
-#define EC_LPC_ADDR_MEMMAP       0x900
+#define EC_LPC_ADDR_MEMMAP       0xE00
 #define EC_MEMMAP_SIZE         255 /* ACPI IO buffer max is 255 bytes */
 #define EC_MEMMAP_TEXT_MAX     8   /* Size of a string in the memory map */
 

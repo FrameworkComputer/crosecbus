@@ -421,6 +421,9 @@ NTSTATUS comm_init_lpc(void)
 	if (signature[0] != 'E' || signature[1] != 'C') {
 		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_COMM_LPC,
 			"Missing Chromium EC memory map.\n");
+		// This results in the following error in Device Manager:
+		// {Not Enough Quota}
+		// Not enough virtual memory or paging file quota is available to complete the specified operation.
 		return STATUS_NO_MEMORY;
 	}
 
