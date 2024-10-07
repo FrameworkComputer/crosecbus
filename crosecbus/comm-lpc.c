@@ -68,6 +68,55 @@ int wait_for_ec(int status_addr, int timeout_usec)
 	return -1;  /* Timeout */
 }
 
+static void decode_result_code(int res)
+{
+	char *name = NULL;
+	switch (res) {
+	case EC_RES_SUCCESS:
+		name = "SUCCES";
+		break;
+	case EC_RES_INVALID_COMMAND:
+		name = "INVALID_COMMAND";
+		break;
+	case EC_RES_ERROR:
+		name = "ERROR";
+		break;
+	case EC_RES_INVALID_PARAM:
+		name = "INVALID_PARAM";
+		break;
+	case EC_RES_ACCESS_DENIED:
+		name = "ACCESS_DENIED";
+		break;
+	case EC_RES_INVALID_RESPONSE:
+		name = "INVALID_RRESPONSE";
+		break;
+	case EC_RES_INVALID_VERSION:
+		name = "INVALID_VERSION";
+		break;
+	case EC_RES_INVALID_CHECKSUM:
+		name = "INVALID_CHECKSUM";
+		break;
+	case EC_RES_IN_PROGRESS:
+	case EC_RES_UNAVAILABLE:
+	case EC_RES_TIMEOUT:
+	case EC_RES_OVERFLOW:
+	case EC_RES_INVALID_HEADER:
+	case EC_RES_REQUEST_TRUNCATED:
+	case EC_RES_RESPONSE_TOO_BIG:
+	case EC_RES_BUS_ERROR:
+	case EC_RES_BUSY:
+	case EC_RES_INVALID_HEADER_VERSION:
+	case EC_RES_INVALID_HEADER_CRC:
+	case EC_RES_INVALID_DATA_CRC:
+	case EC_RES_DUP_UNAVAILABLE:
+	default:
+		name = "Unknown";
+		break;
+	}
+	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_COMM_LPC,
+		"  Error code %d => %s\n", res, name);
+}
+
 static int ec_command_lpc(UINT16 command, UINT8 version,
 	const void* outdata, int outsize,
 	void* indata, int insize)
@@ -110,6 +159,9 @@ static int ec_command_lpc(UINT16 command, UINT8 version,
 	if (i) {
 		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_COMM_LPC,
 			"EC returned error result code %d, cmd=%d,ver=%d\n", i, command, version);
+
+		decode_result_code(i);
+
 		return -EECRESULT - i;
 	}
 
@@ -233,6 +285,8 @@ static int ec_command_lpc_3(UINT16 command, UINT8 version,
 	if (i) {
 		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_COMM_LPC,
 			"EC returned error result code %d, cmd=%d,ver=%d\n", i, command, version);
+
+		decode_result_code(i);
 		return -EECRESULT - i;
 	}
 
@@ -361,6 +415,9 @@ NTSTATUS comm_init_lpc(void)
 	ec_lpc_ops.read = ec_lpc_read_bytes;
 	ec_lpc_ops.write = ec_lpc_write_bytes;
 	ec_lpc_ops.read(EC_LPC_ADDR_MEMMAP + EC_MEMMAP_ID, 2, signature);
+	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_COMM_LPC,
+		"Signature: 0x%x 0x%x\n",
+		signature[0], signature[1]);
 	if (signature[0] != 'E' || signature[1] != 'C') {
 		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_COMM_LPC,
 			"Missing Chromium EC memory map.\n");
@@ -393,5 +450,10 @@ NTSTATUS comm_init_lpc(void)
 			"EC doesn't support protocols we need.\n");
 		return STATUS_INVALID_DEVICE_STATE;
 	}
+
+	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_COMM_LPC, "sizeof(CROSEC_COMMAND)=%d", sizeof(CROSEC_COMMAND));
+	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_COMM_LPC, "ec_max_insize=%d", ec_max_insize);
+	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_COMM_LPC, "ec_max_outsize=%d", ec_max_outsize);
+
 	return STATUS_SUCCESS;
 }

@@ -51,6 +51,69 @@ static NTSTATUS sCrosECErrorCodeMapping[] = {
 	[EC_RES_DUP_UNAVAILABLE] = STATUS_UNSUCCESSFUL,
 };
 
+static void decode_result_code(int res)
+{
+	char *name = NULL;
+	switch (res) {
+	case EC_RES_SUCCESS:
+		name = "SUCCES";
+		break;
+	case EC_RES_INVALID_COMMAND:
+		name = "INVALID_COMMAND";
+		break;
+	case EC_RES_ERROR:
+		name = "ERROR";
+		break;
+	case EC_RES_INVALID_PARAM:
+		name = "INVALID_PARAM";
+		break;
+	case EC_RES_ACCESS_DENIED:
+		name = "ACCESS_DENIED";
+		break;
+	case EC_RES_INVALID_RESPONSE:
+		name = "INVALID_RRESPONSE";
+		break;
+	case EC_RES_INVALID_VERSION:
+		name = "INVALID_VERSION";
+		break;
+	case EC_RES_INVALID_CHECKSUM:
+		name = "INVALID_CHECKSUM";
+		break;
+	case EC_RES_IN_PROGRESS:
+		name = "IN_PROGRESS";
+		break;
+	case EC_RES_UNAVAILABLE:
+		name = "UNAVAILABLE";
+		break;
+	case EC_RES_TIMEOUT:
+		name = "TIMEOUT";
+		break;
+	case EC_RES_OVERFLOW:
+		name = "OVERFLOW";
+		break;
+	case EC_RES_INVALID_HEADER:
+		name = "INVALID_HEADER";
+		break;
+	case EC_RES_REQUEST_TRUNCATED:
+		name = "REQUEST_TRUNCATED";
+		break;
+	case EC_RES_RESPONSE_TOO_BIG:
+		name = "RESPONSE_TOO_BIG";
+		break;
+	case EC_RES_BUS_ERROR:
+	case EC_RES_BUSY:
+	case EC_RES_INVALID_HEADER_VERSION:
+	case EC_RES_INVALID_HEADER_CRC:
+	case EC_RES_INVALID_DATA_CRC:
+	case EC_RES_DUP_UNAVAILABLE:
+	default:
+		name = "Unknown";
+		break;
+	}
+	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_USERSPACEQUEUE,
+		"  Error code %d => %s\n", res, name);
+}
+
 NTSTATUS CrosECQueueInitialize(_In_ WDFDEVICE Device) {
 	WDFQUEUE queue;
 	NTSTATUS status;
@@ -88,12 +151,21 @@ NTSTATUS CrosECIoctlXCmd(_In_ PCROSECBUS_CONTEXT pDevice, _In_ WDFREQUEST Reques
 	NT_RETURN_IF_NTSTATUS_FAILED(WdfRequestRetrieveOutputBuffer(Request, sizeof(*cmd), &outCmd, &outLen));
 	NT_ANALYSIS_ASSUME(outLen >= sizeof(*cmd));
 
+	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_USERSPACEQUEUE, "%!FUNC! Request 0x%p Command 0x%x Version 0x%x",
+		Request, cmd->Command, cmd->Version);
+
 	// User tried to send/receive too much data
+	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_USERSPACEQUEUE, "  Checking cmdLen: %d", cmdLen);
 	NT_RETURN_IF(STATUS_BUFFER_OVERFLOW, cmdLen > (sizeof(CROSEC_COMMAND) + ec_max_insize));
+	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_USERSPACEQUEUE, "  Checking outLen: %d", outLen);
 	NT_RETURN_IF(STATUS_BUFFER_OVERFLOW, outLen > (sizeof(CROSEC_COMMAND) + ec_max_outsize));
 	// User tried to send/receive more bytes than they offered in storage
+	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_USERSPACEQUEUE, "  Checking cmdLen: %d", cmdLen);
 	NT_RETURN_IF(STATUS_BUFFER_TOO_SMALL, cmdLen < (sizeof(CROSEC_COMMAND) + cmd->OutSize));
+	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_USERSPACEQUEUE, "  Checking outLen: %d", outLen);
 	NT_RETURN_IF(STATUS_BUFFER_TOO_SMALL, outLen < (sizeof(CROSEC_COMMAND) + cmd->InSize));
+
+	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_USERSPACEQUEUE, "  Overflow/underflow checks successful");
 
 	// I know this seems overprotective, and that I am wielding too much power over you,
 	// but I don't think that the Windows driver should let you erase your EC flash.
@@ -118,6 +190,7 @@ NTSTATUS CrosECIoctlXCmd(_In_ PCROSECBUS_CONTEXT pDevice, _In_ WDFREQUEST Reques
 		tries--;
 	}
 	if (tries <= 0) {
+		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_USERSPACEQUEUE, "  %!FUNC! Timeout");
 		return STATUS_RETRY; //Userland should retry later.
 	}
 
@@ -135,11 +208,14 @@ NTSTATUS CrosECIoctlXCmd(_In_ PCROSECBUS_CONTEXT pDevice, _In_ WDFREQUEST Reques
 		cmd->Version, cmd->OutSize, res);
 
 	if (res < -EECRESULT) {
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_USERSPACEQUEUE, "  %!FUNC! EECRESULT Failure %d", res);
 		// Propagate a response code from the EC as res (EC result codes are positive)
 		cmd->Result = (-res) - EECRESULT;
 		res = 0;  // tell the client we received nothing
 	}
 	else if (res < 0) {
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_USERSPACEQUEUE, "  %!FUNC! Failure %d", res);
+		decode_result_code(res);
 		// Transform the protocol failure into an NTSTATUS and return early.
 		NT_RETURN_IF(STATUS_FAIL_CHECK, -res > EC_RES_DUP_UNAVAILABLE);
 		return sCrosECErrorCodeMapping[-res];
@@ -150,10 +226,13 @@ NTSTATUS CrosECIoctlXCmd(_In_ PCROSECBUS_CONTEXT pDevice, _In_ WDFREQUEST Reques
 
 	int requiredReplySize = sizeof(CROSEC_COMMAND) + res;
 	if (requiredReplySize > outLen) {
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_USERSPACEQUEUE, "  %!FUNC! Buffer too small. 0x%x > 0x%x",
+		requiredReplySize, outLen);
 		return STATUS_BUFFER_TOO_SMALL;
 	}
 
 	WdfRequestSetInformation(Request, requiredReplySize);
+	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_USERSPACEQUEUE, "  %!FUNC! Success");
 	return STATUS_SUCCESS;
 }
 
