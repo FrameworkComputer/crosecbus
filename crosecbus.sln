@@ -5,6 +5,11 @@ VisualStudioVersion = 16.0.31829.152
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "crosecbus", "crosecbus\crosecbus.vcxproj", "{B3E71397-9BE4-492B-AAED-4D056E59CB1F}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Installer", "Installer\Installer.vcxproj", "{40DB3049-D338-4C0E-9EA4-9745606B0550}"
+	ProjectSection(ProjectDependencies) = postProject
+		{B3E71397-9BE4-492B-AAED-4D056E59CB1F} = {B3E71397-9BE4-492B-AAED-4D056E59CB1F}
+	EndProjectSection
+EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "crosecbus Package", "crosecbus Package\crosecbus Package.vcxproj", "{EA676041-89D8-4ACF-A48B-F11CA9F5DD8B}"
 	ProjectSection(ProjectDependencies) = postProject
 		{B3E71397-9BE4-492B-AAED-4D056E59CB1F} = {B3E71397-9BE4-492B-AAED-4D056E59CB1F}
@@ -30,6 +35,14 @@ Global
 		{B3E71397-9BE4-492B-AAED-4D056E59CB1F}.Release|x64.ActiveCfg = Release|x64
 		{B3E71397-9BE4-492B-AAED-4D056E59CB1F}.Release|x64.Build.0 = Release|x64
 		{B3E71397-9BE4-492B-AAED-4D056E59CB1F}.Release|x64.Deploy.0 = Release|x64
+		{40DB3049-D338-4C0E-9EA4-9745606B0550}.Debug|Win32.ActiveCfg = Debug|Win32
+		{40DB3049-D338-4C0E-9EA4-9745606B0550}.Debug|Win32.Build.0 = Debug|Win32
+		{40DB3049-D338-4C0E-9EA4-9745606B0550}.Debug|x64.ActiveCfg = Debug|x64
+		{40DB3049-D338-4C0E-9EA4-9745606B0550}.Debug|x64.Build.0 = Debug|x64
+		{40DB3049-D338-4C0E-9EA4-9745606B0550}.Release|Win32.ActiveCfg = Release|Win32
+		{40DB3049-D338-4C0E-9EA4-9745606B0550}.Release|Win32.Build.0 = Release|Win32
+		{40DB3049-D338-4C0E-9EA4-9745606B0550}.Release|x64.ActiveCfg = Release|x64
+		{40DB3049-D338-4C0E-9EA4-9745606B0550}.Release|x64.Build.0 = Release|x64
 		{EA676041-89D8-4ACF-A48B-F11CA9F5DD8B}.Debug|Win32.ActiveCfg = Debug|Win32
 		{EA676041-89D8-4ACF-A48B-F11CA9F5DD8B}.Debug|Win32.Build.0 = Debug|Win32
 		{EA676041-89D8-4ACF-A48B-F11CA9F5DD8B}.Debug|Win32.Deploy.0 = Debug|Win32
