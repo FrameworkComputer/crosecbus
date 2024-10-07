@@ -1,4 +1,5 @@
 #include "driver.h"
+#include "comm-lpc.tmh"
 #include "comm-host.h"
 
 static __inline void outb(unsigned char __val, unsigned int __port) {
@@ -20,9 +21,6 @@ static __inline unsigned short inw(unsigned int __port) {
 
 #define INITIAL_UDELAY 5     /* 5 us */
 #define MAXIMUM_UDELAY 10000 /* 10 ms */
-
-static ULONG CrosEcBusDebugLevel = 100;
-static ULONG CrosEcBusDebugCatagories = DBG_INIT || DBG_PNP || DBG_IOCTL;
 
 UINT32 ec_max_outsize, ec_max_insize;
 
@@ -102,7 +100,7 @@ static int ec_command_lpc(UINT16 command, UINT8 version,
 	outb((UINT8)command, EC_LPC_ADDR_HOST_CMD);
 
 	if (wait_for_ec(EC_LPC_ADDR_HOST_CMD, 1000000)) {
-		CrosEcBusPrint(DEBUG_LEVEL_INFO, DBG_IOCTL,
+		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_COMM_LPC,
 			"Timeout waiting for EC response\n");
 		return -EC_RES_ERROR;
 	}
@@ -110,8 +108,8 @@ static int ec_command_lpc(UINT16 command, UINT8 version,
 	/* Check result */
 	i = inb(EC_LPC_ADDR_HOST_DATA);
 	if (i) {
-		CrosEcBusPrint(DEBUG_LEVEL_INFO, DBG_IOCTL,
-			"EC returned error result code %d\n", i);
+		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_COMM_LPC,
+			"EC returned error result code %d, cmd=%d,ver=%d\n", i, command, version);
 		return -EECRESULT - i;
 	}
 
@@ -125,13 +123,13 @@ static int ec_command_lpc(UINT16 command, UINT8 version,
 	 * from the wrong place.
 	 */
 	if (!(args.flags & EC_HOST_ARGS_FLAG_TO_HOST)) {
-		CrosEcBusPrint(DEBUG_LEVEL_INFO, DBG_IOCTL,
+		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_COMM_LPC,
 			"EC protocol mismatch\n");
 		return -EC_RES_INVALID_RESPONSE;
 	}
 
 	if (args.data_size > insize) {
-		CrosEcBusPrint(DEBUG_LEVEL_INFO, DBG_IOCTL,
+		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_COMM_LPC,
 			"EC returned too much data\n");
 		return -EC_RES_INVALID_RESPONSE;
 	}
@@ -148,7 +146,7 @@ static int ec_command_lpc(UINT16 command, UINT8 version,
 
 	/* Verify checksum */
 	if (args.checksum != (UINT8)csum) {
-		CrosEcBusPrint(DEBUG_LEVEL_INFO, DBG_IOCTL,
+		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_COMM_LPC,
 			"EC response has invalid checksum\n");
 		return -EC_RES_INVALID_CHECKSUM;
 	}
@@ -225,7 +223,7 @@ static int ec_command_lpc_3(UINT16 command, UINT8 version,
 	outb(EC_COMMAND_PROTOCOL_3, EC_LPC_ADDR_HOST_CMD);
 
 	if (wait_for_ec(EC_LPC_ADDR_HOST_CMD, 1000000)) {
-		CrosEcBusPrint(DEBUG_LEVEL_INFO, DBG_IOCTL,
+		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_COMM_LPC,
 			"Timeout waiting for EC response\n");
 		return -EC_RES_ERROR;
 	}
@@ -233,8 +231,8 @@ static int ec_command_lpc_3(UINT16 command, UINT8 version,
 	/* Check result */
 	i = inb(EC_LPC_ADDR_HOST_DATA);
 	if (i) {
-		CrosEcBusPrint(DEBUG_LEVEL_INFO, DBG_IOCTL,
-			"EC returned error result code %d\n", i);
+		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_COMM_LPC,
+			"EC returned error result code %d, cmd=%d,ver=%d\n", i, command, version);
 		return -EECRESULT - i;
 	}
 
@@ -246,19 +244,19 @@ static int ec_command_lpc_3(UINT16 command, UINT8 version,
 	}
 
 	if (rs.struct_version != EC_HOST_RESPONSE_VERSION) {
-		CrosEcBusPrint(DEBUG_LEVEL_INFO, DBG_IOCTL,
+		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_COMM_LPC,
 			"EC response version mismatch\n");
 		return -EC_RES_INVALID_RESPONSE;
 	}
 
 	if (rs.reserved) {
-		CrosEcBusPrint(DEBUG_LEVEL_INFO, DBG_IOCTL,
+		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_COMM_LPC,
 			"EC response reserved != 0\n");
 		return -EC_RES_INVALID_RESPONSE;
 	}
 
 	if (rs.data_len > insize) {
-		CrosEcBusPrint(DEBUG_LEVEL_INFO, DBG_IOCTL,
+		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_COMM_LPC,
 			"EC returned too much data\n");
 		return -EC_RES_RESPONSE_TOO_BIG;
 	}
@@ -271,7 +269,7 @@ static int ec_command_lpc_3(UINT16 command, UINT8 version,
 
 	/* Verify checksum */
 	if ((UINT8)csum) {
-		CrosEcBusPrint(DEBUG_LEVEL_INFO, DBG_IOCTL,
+		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_COMM_LPC,
 			"EC response has invalid checksum\n");
 		return -EC_RES_INVALID_CHECKSUM;
 	}
@@ -321,10 +319,10 @@ NTSTATUS comm_init_lpc(void)
 	byte &= inb(EC_LPC_ADDR_HOST_CMD);
 	byte &= inb(EC_LPC_ADDR_HOST_DATA);
 	if (byte == 0xff) {
-		CrosEcBusPrint(DEBUG_LEVEL_INFO, DBG_INIT,
+		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_COMM_LPC,
 			"Port 0x%x,0x%x are both 0xFF.\n",
 			EC_LPC_ADDR_HOST_CMD, EC_LPC_ADDR_HOST_DATA);
-		CrosEcBusPrint(DEBUG_LEVEL_INFO, DBG_INIT,
+		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_COMM_LPC,
 			"Very likely this board doesn't have a Chromium EC.\n");
 		return STATUS_CONNECTION_INVALID;
 	}
@@ -346,7 +344,7 @@ NTSTATUS comm_init_lpc(void)
 			//All MEC EC's are Protocol V3
 			ec_command_proto = ec_command_lpc_3;
 
-			DbgPrint("MEC EC\n");
+			TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_COMM_LPC, "MEC EC\n");
 			return STATUS_SUCCESS;
 		}
 	}
@@ -364,7 +362,7 @@ NTSTATUS comm_init_lpc(void)
 	ec_lpc_ops.write = ec_lpc_write_bytes;
 	ec_lpc_ops.read(EC_LPC_ADDR_MEMMAP + EC_MEMMAP_ID, 2, signature);
 	if (signature[0] != 'E' || signature[1] != 'C') {
-		CrosEcBusPrint(DEBUG_LEVEL_INFO, DBG_INIT,
+		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_COMM_LPC,
 			"Missing Chromium EC memory map.\n");
 		return STATUS_NO_MEMORY;
 	}
@@ -380,7 +378,7 @@ NTSTATUS comm_init_lpc(void)
 		ec_max_insize = EC_LPC_HOST_PACKET_SIZE -
 			sizeof(struct ec_host_response);
 
-		DbgPrint("Ver 3\n");
+		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_COMM_LPC, "Ver 3\n");
 
 	}
 	else if (i & EC_HOST_CMD_FLAG_LPC_ARGS_SUPPORTED) {
@@ -388,10 +386,10 @@ NTSTATUS comm_init_lpc(void)
 		ec_command_proto = ec_command_lpc;
 		ec_max_outsize = ec_max_insize = EC_PROTO2_MAX_PARAM_SIZE;
 
-		DbgPrint("Ver 2\n");
+		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_COMM_LPC, "Ver 2\n");
 	}
 	else {
-		CrosEcBusPrint(DEBUG_LEVEL_INFO, DBG_INIT,
+		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_COMM_LPC,
 			"EC doesn't support protocols we need.\n");
 		return STATUS_INVALID_DEVICE_STATE;
 	}

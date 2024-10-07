@@ -1,10 +1,8 @@
 #include "driver.h"
 #include "userspaceQueue.h"
+#include "userspaceQueue.tmh"
 #include "ec_commands.h"
 #include "comm-host.h"
-
-static ULONG CrosEcBusDebugLevel = 100;
-static ULONG CrosEcBusDebugCatagories = DBG_INIT || DBG_PNP || DBG_IOCTL;
 
 //Mostly based on DHowett's FrameworkWindowsUtils to preserve compatibility with his driver
 
@@ -73,7 +71,7 @@ NTSTATUS CrosECQueueInitialize(_In_ WDFDEVICE Device) {
 	status = WdfIoQueueCreate(Device, &queueConfig, WDF_NO_OBJECT_ATTRIBUTES, &queue);
 
 	if (!NT_SUCCESS(status)) {
-		CrosEcBusPrint(DEBUG_LEVEL_ERROR, DBG_PNP, "WdfIoQueueCreate failed %!STATUS!", status);
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_USERSPACEQUEUE, "WdfIoQueueCreate failed %!STATUS!", status);
 		return status;
 	}
 
@@ -132,8 +130,8 @@ NTSTATUS CrosECIoctlXCmd(_In_ PCROSECBUS_CONTEXT pDevice, _In_ WDFREQUEST Reques
 
 	WdfWaitLockRelease(pDevice->EcLock);
 
-	CrosEcBusPrint(DEBUG_LEVEL_ERROR, DBG_IOCTL,
-		"%!FUNC! Request 0x%p Command %u Version %u OutSize %u Result %d", Request, cmd->Command,
+	TraceEvents(TRACE_LEVEL_ERROR, TRACE_USERSPACEQUEUE,
+		"  %!FUNC! Request 0x%p Command %u Version %u OutSize %u Result %d", Request, cmd->Command,
 		cmd->Version, cmd->OutSize, res);
 
 	if (res < -EECRESULT) {
@@ -168,7 +166,7 @@ NTSTATUS CrosECIoctlReadMem(_In_ WDFREQUEST Request) {
 
 	int res = ec_readmem(rq->offset, rq->bytes, rs->buffer);
 
-	CrosEcBusPrint(DEBUG_LEVEL_INFO, DBG_IOCTL, "%!FUNC! Request 0x%p Offset 0x%x Buffer %d Result %d",
+	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_USERSPACEQUEUE, "%!FUNC! Request 0x%p Offset 0x%x Buffer %d Result %d",
 		Request, rq->offset, rq->bytes, res);
 
 	NT_RETURN_IF(STATUS_UNSUCCESSFUL, res < 0);
@@ -185,7 +183,7 @@ VOID CrosECEvtIoDeviceControl(_In_ WDFQUEUE Queue,
 	_In_ size_t OutputBufferLength,
 	_In_ size_t InputBufferLength,
 	_In_ ULONG IoControlCode) {
-	CrosEcBusPrint(DEBUG_LEVEL_INFO, DBG_IOCTL,
+	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_USERSPACEQUEUE,
 		"%!FUNC! Queue 0x%p, Request 0x%p OutputBufferLength %d InputBufferLength %d IoControlCode %d",
 		Queue, Request, (int)OutputBufferLength, (int)InputBufferLength, IoControlCode);
 	UNREFERENCED_PARAMETER(InputBufferLength);
@@ -212,7 +210,7 @@ VOID CrosECEvtIoDeviceControl(_In_ WDFQUEUE Queue,
 }
 
 VOID CrosECEvtIoStop(_In_ WDFQUEUE Queue, _In_ WDFREQUEST Request, _In_ ULONG ActionFlags) {
-	CrosEcBusPrint(DEBUG_LEVEL_INFO, DBG_IOCTL, "%!FUNC! Queue 0x%p, Request 0x%p ActionFlags %d", Queue,
+	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_USERSPACEQUEUE, "%!FUNC! Queue 0x%p, Request 0x%p ActionFlags %d", Queue,
 		Request, ActionFlags);
 
 	UNREFERENCED_PARAMETER(Queue);
