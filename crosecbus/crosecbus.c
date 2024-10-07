@@ -258,33 +258,36 @@ Status
 
 	pDevice->hostSleepV1 = FALSE;
 
-	NTSTATUS acpiNotifyStatus = WdfFdoQueryForInterface(FxDevice,
-		&GUID_ACPI_INTERFACE_STANDARD2,
-		(PINTERFACE)&pDevice->S0ixNotifyAcpiInterface,
-		sizeof(ACPI_INTERFACE_STANDARD2),
-		1,
-		NULL);
+	// TODO: We need to implement this
+	// NTSTATUS acpiNotifyStatus = WdfFdoQueryForInterface(FxDevice,
+	// 	&GUID_ACPI_INTERFACE_STANDARD2,
+	// 	(PINTERFACE)&pDevice->S0ixNotifyAcpiInterface,
+	// 	sizeof(ACPI_INTERFACE_STANDARD2),
+	// 	1,
+	// 	NULL);
 
-	if (NT_SUCCESS(acpiNotifyStatus)) {
-		struct ec_params_get_cmd_versions_v1 req_v1 = { 0 };
-		struct ec_response_get_cmd_versions resp = { 0 };
-		req_v1.cmd = EC_CMD_HOST_SLEEP_EVENT;
-		rv = ec_command_proto(EC_CMD_GET_CMD_VERSIONS, 1, &req_v1, sizeof(req_v1), &resp, sizeof(resp));
-		if (rv >= 0) {
-			pDevice->hostSleepV1 = (resp.version_mask & EC_VER_MASK(1)) != 0;
-		}
+	// if (NT_SUCCESS(acpiNotifyStatus)) {
+	// 	struct ec_params_get_cmd_versions_v1 req_v1 = { 0 };
+	// 	struct ec_response_get_cmd_versions resp = { 0 };
+	// 	req_v1.cmd = EC_CMD_HOST_SLEEP_EVENT;
+	// 	rv = ec_command_proto(EC_CMD_GET_CMD_VERSIONS, 1, &req_v1, sizeof(req_v1), &resp, sizeof(resp));
+	// 	if (rv >= 0) {
+	// 		pDevice->hostSleepV1 = (resp.version_mask & EC_VER_MASK(1)) != 0;
+	// 	}
 
-		acpiNotifyStatus = pDevice->S0ixNotifyAcpiInterface.RegisterForDeviceNotifications(
-			pDevice->S0ixNotifyAcpiInterface.Context,
-			(PDEVICE_NOTIFY_CALLBACK2)CrosEcBusS0ixNotifyCallback,
-			pDevice);
-		if (!NT_SUCCESS(acpiNotifyStatus)) {
+	// 	acpiNotifyStatus = pDevice->S0ixNotifyAcpiInterface.RegisterForDeviceNotifications(
+	// 		pDevice->S0ixNotifyAcpiInterface.Context,
+	// 		(PDEVICE_NOTIFY_CALLBACK2)CrosEcBusS0ixNotifyCallback,
+	// 		pDevice);
+	// 	if (!NT_SUCCESS(acpiNotifyStatus)) {
 	// 		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_CROSECBUS, "Warning: Failed to register notifications on ACPI device\n");
-		}
-	}
-	else {
+	// 	}
+	// }
+	// else {
 	// 	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_CROSECBUS, "Warning: Failed to get ACPI device\n");
-	}
+	// }
+
+	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_CROSECBUS, "OnPrepareHardware finished %!STATUS!", status);
 
 	return status;
 }
