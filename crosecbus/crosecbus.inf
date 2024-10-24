@@ -15,8 +15,8 @@
 Signature   = "$WINDOWS NT$"
 Class       = System
 ClassGuid   = {4d36e97d-e325-11ce-bfc1-08002be10318}
-Provider    = CoolStar
-DriverVer   = 12/16/2021,2.1.0
+Provider    = Framework Computer
+DriverVer   = 10/24/2024,0.0.0.5
 CatalogFile = crosecbus.cat
 PnpLockdown = 1
 
@@ -73,7 +73,7 @@ LoadOrderGroup = Base
 
 [Strings]
 SPSVCINST_ASSOCSERVICE= 0x00000002
-StdMfg                 = "CoolStar"
+StdMfg                 = "Framework"
 DiskId1                = "Chrome EC Installation Disk #1"
-CrosEcBus.DeviceDesc = "Chromebook EC Bus"
+CrosEcBus.DeviceDesc = "Framework EC"
 CrosEcBus.SVCDESC    = "Chrome EC Service"

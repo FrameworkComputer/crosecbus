@@ -14,17 +14,17 @@ Abstract:
 
 #define VER_FILETYPE                VFT_DRV
 #define VER_FILESUBTYPE             VFT2_DRV_SYSTEM
-#define VER_FILEDESCRIPTION_STR     "Chromebook EC Bus"
+#define VER_FILEDESCRIPTION_STR     "Framework EC Bus"
 #define VER_INTERNALNAME_STR        "crosecbus.sys"
 #define VER_ORIGINALFILENAME_STR    "crosecbus.sys"
 
 #define VER_LEGALCOPYRIGHT_YEARS    "2024"
-#define VER_LEGALCOPYRIGHT_STR	    "Copyright (C) " VER_LEGALCOPYRIGHT_YEARS " CoolStar."
+#define VER_LEGALCOPYRIGHT_STR	    "Copyright (C) " VER_LEGALCOPYRIGHT_YEARS " CoolStar, Framework Computer Inc."
 
-#define VER_FILEVERSION 2,1,0,0
-#define VER_PRODUCTVERSION_STR "2.1.0.0"
-#define VER_PRODUCTVERSION 2,1,0,0
-#define LVER_PRODUCTVERSION_STR L"2.1.0.0"
+#define VER_FILEVERSION 0,0,0,5
+#define VER_PRODUCTVERSION_STR "0.0.0.5"
+#define VER_PRODUCTVERSION 0,0,0,5
+#define LVER_PRODUCTVERSION_STR L"0.0.0.5"
 
 #define VER_FILEFLAGSMASK		(VS_FF_DEBUG | VS_FF_PRERELEASE)
 #ifdef DEBUG
@@ -35,7 +35,7 @@ Abstract:
 
 #define VER_FILEOS				VOS_NT_WINDOWS32
 
-#define VER_COMPANYNAME_STR         "CoolStar"
-#define VER_PRODUCTNAME_STR         "Chromebook EC Bus"
+#define VER_COMPANYNAME_STR         "Framework Computer"
+#define VER_PRODUCTNAME_STR         "Framework EC"
 
 #include "common.ver"
