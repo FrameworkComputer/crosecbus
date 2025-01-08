@@ -374,7 +374,7 @@ static NTSTATUS send_ec_command(
 	UINT8* in,
 	size_t inSize)
 {
-	PCROSEC_COMMAND msg = (PCROSEC_COMMAND)ExAllocatePoolWithTag(NonPagedPool, sizeof(CROSEC_COMMAND) + max(outSize, inSize), CROSECBUS_POOL_TAG);
+	PCROSEC_COMMAND msg = (PCROSEC_COMMAND)ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(CROSEC_COMMAND) + max(outSize, inSize), CROSECBUS_POOL_TAG);
 	if (!msg) {
 		return STATUS_NO_MEMORY;
 	}
