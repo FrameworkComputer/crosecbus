@@ -461,9 +461,9 @@ Status
 --*/
 {
 	UNREFERENCED_PARAMETER(FxTargetState);
+	UNREFERENCED_PARAMETER(FxDevice);
 
 	NTSTATUS status = STATUS_SUCCESS;
-	PCROSECBUS_CONTEXT pDevice = GetDeviceContext(FxDevice);
 
 	return status;
 }
