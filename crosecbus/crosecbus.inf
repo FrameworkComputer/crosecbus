@@ -57,6 +57,7 @@ crosecbus.sys
 [CrosEcBus_AddReg]
 ; Set to 1 to connect the first interrupt resource found, 0 to leave disconnected
 HKR,Settings,"ConnectInterrupt",0x00010001,0
+HKR,,Security,,"D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;GA;;;UD)"  ;System, Admin, and UMDF drivers
 
 ;-------------- Service installation
 [CrosEcBus_Device.NT.Services]
