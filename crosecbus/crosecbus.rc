@@ -18,7 +18,7 @@ Abstract:
 #define VER_INTERNALNAME_STR        "crosecbus.sys"
 #define VER_ORIGINALFILENAME_STR    "crosecbus.sys"
 
-#define VER_LEGALCOPYRIGHT_YEARS    "2024"
+#define VER_LEGALCOPYRIGHT_YEARS    "2023-2025"
 #define VER_LEGALCOPYRIGHT_STR	    "Copyright (C) " VER_LEGALCOPYRIGHT_YEARS " CoolStar, Framework Computer Inc."
 
 #define VER_FILEVERSION 0,0,0,6
