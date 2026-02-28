@@ -1,0 +1,6 @@
+# CodeQL configuration for WHCP Windows 11 25H2 certification
+# See: https://learn.microsoft.com/en-us/windows-hardware/drivers/devtest/static-tools-and-codeql
+disable-default-queries: true
+packs:
+  - microsoft/cpp-queries@0.0.4:codeql-suites/cpp-code-scanning.qls
+  - microsoft/windows-drivers@1.8.0:windows-driver-suites/recommended.qls
