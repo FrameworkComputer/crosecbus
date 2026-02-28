@@ -36,11 +36,9 @@ crosecbus.sys  = 1,,
 ;*****************************************
 
 [Manufacturer]
-%StdMfg%=Standard,NT$ARCH$
+%StdMfg%=Standard,NT$ARCH$.10.0...16299
 
-; Decorated model section take precedence over undecorated 
-; ones on XP and later.
-[Standard.NT$ARCH$]
+[Standard.NT$ARCH$.10.0...16299]
 %CrosEcBus.DeviceDesc%=CrosEcBus_Device, ACPI\FRMWC004
 
 [CrosEcBus_Device.NT]
