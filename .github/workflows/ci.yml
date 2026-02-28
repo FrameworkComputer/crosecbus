@@ -22,3 +22,11 @@ jobs:
         env:
           Configuration: ${{ matrix.configuration }}
           Platform: ${{ matrix.platform }}
+
+      - name: Run InfVerif
+        run: |
+          $wdkBin = Get-Item "C:\Program Files (x86)\Windows Kits\10\Tools\*\x64" | Sort-Object Name | Select-Object -Last 1
+          & "$wdkBin\infverif.exe" /h /v "${{ env.Platform }}\${{ env.Configuration }}\crosecbus\crosecbus.inf"
+        env:
+          Configuration: ${{ matrix.configuration }}
+          Platform: ${{ matrix.platform }}
