@@ -27,4 +27,53 @@ extern int (*ec_command_proto)(UINT16 command, UINT8 version,
  */
 extern int (*ec_readmem)(int offset, int bytes, void* dest);
 
+static __inline const char* ec_result_to_string(int res) {
+	switch (res) {
+	case EC_RES_SUCCESS:
+		return "SUCCESS";
+	case EC_RES_INVALID_COMMAND:
+		return "INVALID_COMMAND";
+	case EC_RES_ERROR:
+		return "ERROR";
+	case EC_RES_INVALID_PARAM:
+		return "INVALID_PARAM";
+	case EC_RES_ACCESS_DENIED:
+		return "ACCESS_DENIED";
+	case EC_RES_INVALID_RESPONSE:
+		return "INVALID_RESPONSE";
+	case EC_RES_INVALID_VERSION:
+		return "INVALID_VERSION";
+	case EC_RES_INVALID_CHECKSUM:
+		return "INVALID_CHECKSUM";
+	case EC_RES_IN_PROGRESS:
+		return "IN_PROGRESS";
+	case EC_RES_UNAVAILABLE:
+		return "UNAVAILABLE";
+	case EC_RES_TIMEOUT:
+		return "TIMEOUT";
+	case EC_RES_OVERFLOW:
+		return "OVERFLOW";
+	case EC_RES_INVALID_HEADER:
+		return "INVALID_HEADER";
+	case EC_RES_REQUEST_TRUNCATED:
+		return "REQUEST_TRUNCATED";
+	case EC_RES_RESPONSE_TOO_BIG:
+		return "RESPONSE_TOO_BIG";
+	case EC_RES_BUS_ERROR:
+		return "BUS_ERROR";
+	case EC_RES_BUSY:
+		return "BUSY";
+	case EC_RES_INVALID_HEADER_VERSION:
+		return "INVALID_HEADER_VERSION";
+	case EC_RES_INVALID_HEADER_CRC:
+		return "INVALID_HEADER_CRC";
+	case EC_RES_INVALID_DATA_CRC:
+		return "INVALID_DATA_CRC";
+	case EC_RES_DUP_UNAVAILABLE:
+		return "DUP_UNAVAILABLE";
+	default:
+		return "Unknown";
+	}
+}
+
 #endif

@@ -70,51 +70,8 @@ int wait_for_ec(int status_addr, int timeout_usec)
 
 static void decode_result_code(int res)
 {
-	char *name = NULL;
-	switch (res) {
-	case EC_RES_SUCCESS:
-		name = "SUCCES";
-		break;
-	case EC_RES_INVALID_COMMAND:
-		name = "INVALID_COMMAND";
-		break;
-	case EC_RES_ERROR:
-		name = "ERROR";
-		break;
-	case EC_RES_INVALID_PARAM:
-		name = "INVALID_PARAM";
-		break;
-	case EC_RES_ACCESS_DENIED:
-		name = "ACCESS_DENIED";
-		break;
-	case EC_RES_INVALID_RESPONSE:
-		name = "INVALID_RRESPONSE";
-		break;
-	case EC_RES_INVALID_VERSION:
-		name = "INVALID_VERSION";
-		break;
-	case EC_RES_INVALID_CHECKSUM:
-		name = "INVALID_CHECKSUM";
-		break;
-	case EC_RES_IN_PROGRESS:
-	case EC_RES_UNAVAILABLE:
-	case EC_RES_TIMEOUT:
-	case EC_RES_OVERFLOW:
-	case EC_RES_INVALID_HEADER:
-	case EC_RES_REQUEST_TRUNCATED:
-	case EC_RES_RESPONSE_TOO_BIG:
-	case EC_RES_BUS_ERROR:
-	case EC_RES_BUSY:
-	case EC_RES_INVALID_HEADER_VERSION:
-	case EC_RES_INVALID_HEADER_CRC:
-	case EC_RES_INVALID_DATA_CRC:
-	case EC_RES_DUP_UNAVAILABLE:
-	default:
-		name = "Unknown";
-		break;
-	}
 	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_COMM_LPC,
-		"  Error code %d => %s\n", res, name);
+		"  Error code %d => %s\n", res, ec_result_to_string(res));
 }
 
 static int ec_command_lpc(UINT16 command, UINT8 version,
