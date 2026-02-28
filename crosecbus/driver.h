@@ -19,6 +19,8 @@
 
 #include <acpiioct.h>
 
+#include "trace.h"
+
 //
 // String definitions
 //
@@ -149,25 +151,25 @@ EVT_WDF_IO_QUEUE_IO_INTERNAL_DEVICE_CONTROL CrosEcBusEvtInternalDeviceControl;
 // Helper macros
 //
 
-#define DEBUG_LEVEL_ERROR   1
-#define DEBUG_LEVEL_INFO    2
-#define DEBUG_LEVEL_VERBOSE 3
-
-#define DBG_INIT  1
-#define DBG_PNP   2
-#define DBG_IOCTL 4
-
-#if 0
-#define CrosEcBusPrint(dbglevel, dbgcatagory, fmt, ...) {          \
-    if (CrosEcBusDebugLevel >= dbglevel &&                         \
-        (CrosEcBusDebugCatagories && dbgcatagory))                 \
-		    {                                                           \
-        DbgPrint(DRIVERNAME);                                   \
-        DbgPrint(fmt, __VA_ARGS__);                             \
-		    }                                                           \
-}
-#else
-#define CrosEcBusPrint(dbglevel, fmt, ...) {                       \
-}
-#endif
+// #define DEBUG_LEVEL_ERROR   1
+// #define DEBUG_LEVEL_INFO    2
+// #define DEBUG_LEVEL_VERBOSE 3
+//
+// #define DBG_INIT  1
+// #define DBG_PNP   2
+// #define DBG_IOCTL 4
+//
+// #if 1
+// #define CrosEcBusPrint(dbglevel, dbgcatagory, fmt, ...) {          \
+//     if (CrosEcBusDebugLevel >= dbglevel &&                         \
+//         (CrosEcBusDebugCatagories && dbgcatagory))                 \
+// 		    {                                                           \
+//         DbgPrint(DRIVERNAME);                                   \
+//         DbgPrint(fmt, __VA_ARGS__);                             \
+// 		    }                                                           \
+// }
+// #else
+// #define CrosEcBusPrint(dbglevel, fmt, ...) {                       \
+// }
+// #endif
 #endif

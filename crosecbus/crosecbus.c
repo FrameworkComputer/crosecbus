@@ -1,5 +1,7 @@
 #define DESCRIPTOR_DEF
 #include "driver.h"
+#include "crosecbus.tmh"
+#include "trace.h"
 #pragma warning(disable:4005)
 #pragma warning(disable:4083)
 #include <stdint.h>
@@ -18,9 +20,6 @@ CrosEcBusS0ixNotifyCallback(
 	PCROSECBUS_CONTEXT pDevice,
 	ULONG NotifyCode);
 
-static ULONG CrosEcBusDebugLevel = 100;
-static ULONG CrosEcBusDebugCatagories = DBG_INIT || DBG_PNP || DBG_IOCTL;
-
 NTSTATUS comm_init_lpc(void);
 
 NTSTATUS
@@ -33,8 +32,8 @@ __in PUNICODE_STRING RegistryPath
 	WDF_DRIVER_CONFIG      config;
 	WDF_OBJECT_ATTRIBUTES  attributes;
 
-	CrosEcBusPrint(DEBUG_LEVEL_INFO, DBG_INIT,
-		"Driver Entry\n");
+	WPP_INIT_TRACING(DriverObject, RegistryPath);
+	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_CROSECBUS, "DriverEntry: Entry");
 
 	WDF_DRIVER_CONFIG_INIT(&config, CrosEcBusEvtDeviceAdd);
 
@@ -53,8 +52,8 @@ __in PUNICODE_STRING RegistryPath
 
 	if (!NT_SUCCESS(status))
 	{
-		CrosEcBusPrint(DEBUG_LEVEL_ERROR, DBG_INIT,
-			"WdfDriverCreate failed with status 0x%x\n", status);
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_CROSECBUS, "WdfDriverCreate failed %!STATUS!", status);
+		WPP_CLEANUP(DriverObject);
 	}
 
 	return status;
@@ -71,12 +70,12 @@ static NTSTATUS CrosEcCmdXferStatus(
 
 	if (ec_command_proto) {
 		if (Msg->InSize > ec_max_insize) {
-			CrosEcBusPrint(DEBUG_LEVEL_ERROR, DBG_IOCTL, "Clamping message receive buffer\n");
+			TraceEvents(TRACE_LEVEL_ERROR, TRACE_CROSECBUS, "Clamping message receive buffer\n");
 			Msg->InSize = ec_max_insize;
 		}
 
 		if (Msg->OutSize > ec_max_outsize) {
-			CrosEcBusPrint(DEBUG_LEVEL_ERROR, DBG_IOCTL, "request of size %u is too big (max: %u)\n", Msg->OutSize, ec_max_outsize);
+			TraceEvents(TRACE_LEVEL_ERROR, TRACE_CROSECBUS, "request of size %u is too big (max: %u)\n", Msg->OutSize, ec_max_outsize);
 			return STATUS_INVALID_PARAMETER_3;
 		}
 
@@ -92,7 +91,7 @@ static NTSTATUS CrosEcCmdXferStatus(
 			return STATUS_SUCCESS;
 		}
 		else {
-			CrosEcBusPrint(DEBUG_LEVEL_ERROR, DBG_IOCTL, "EC Returned Error: %d\n", cmdstatus);
+			TraceEvents(TRACE_LEVEL_ERROR, TRACE_CROSECBUS, "EC Returned Error: %d\n", cmdstatus);
 			return STATUS_INTERNAL_ERROR;
 		}
 	}
@@ -165,8 +164,6 @@ Status
 	for (ULONG i = 0; i < resourceCount; i++)
 	{
 		PCM_PARTIAL_RESOURCE_DESCRIPTOR pDescriptor, pDescriptorRaw;
-		UCHAR Class;
-		UCHAR Type;
 
 		pDescriptor = WdfCmResourceListGetDescriptor(
 			FxResourcesTranslated, i);
@@ -195,12 +192,12 @@ Status
 
 			if (!NT_SUCCESS(status))
 			{
-				CrosEcBusPrint(DEBUG_LEVEL_ERROR, DBG_PNP,
+				TraceEvents(TRACE_LEVEL_ERROR, TRACE_CROSECBUS,
 					"Error creating WDF interrupt object - %!STATUS!",
 					status);
 			}
 
-			DbgPrint("Found Sync GPIO!\n");
+			TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_CROSECBUS, "Found Sync GPIO!\n");
 		default:
 			//
 			// Ignoring all other resource types.
@@ -214,9 +211,9 @@ Status
 		&pDevice->EcLock);
 	if (!NT_SUCCESS(status))
 	{
-		CrosEcBusPrint(
-			DEBUG_LEVEL_ERROR,
-			DBG_IOCTL,
+		TraceEvents(
+			TRACE_LEVEL_ERROR,
+			TRACE_CROSECBUS,
 			"Error creating Waitlock - %x\n",
 			status);
 		return status;
@@ -234,11 +231,11 @@ Status
 		r.version_string_ro[sizeof(r.version_string_ro) - 1] = '\0';
 		r.version_string_rw[sizeof(r.version_string_rw) - 1] = '\0';
 
-		DbgPrint("EC RO Version: %s\n", r.version_string_ro);
-		DbgPrint("EC RW Version: %s\n", r.version_string_rw);
+		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_CROSECBUS, "EC RO Version: %s\n", r.version_string_ro);
+		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_CROSECBUS, "EC RW Version: %s\n", r.version_string_rw);
 	}
 	else {
-		DbgPrint("Error: Could not get version\n");
+		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_CROSECBUS, "Error: Could not get version\n");
 		return STATUS_DEVICE_CONFIGURATION_ERROR;
 	}
 
@@ -249,43 +246,46 @@ Status
 		pDevice->EcFeatures[0] = f.flags[0];
 		pDevice->EcFeatures[1] = f.flags[1];
 
-		DbgPrint("EC Features: %08x %08x\n", pDevice->EcFeatures[0], pDevice->EcFeatures[1]);
+		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_CROSECBUS, "EC Features: %08x %08x\n", pDevice->EcFeatures[0], pDevice->EcFeatures[1]);
 	}
 	else {
-		DbgPrint("Warning: Couldn't get device features\n");
+		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_CROSECBUS, "Warning: Couldn't get device features\n");
 		pDevice->EcFeatures[0] = (UINT32)-1;
 		pDevice->EcFeatures[1] = (UINT32)-1;
 	}
 
 	pDevice->hostSleepV1 = FALSE;
 
-	NTSTATUS acpiNotifyStatus = WdfFdoQueryForInterface(FxDevice,
-		&GUID_ACPI_INTERFACE_STANDARD2,
-		(PINTERFACE)&pDevice->S0ixNotifyAcpiInterface,
-		sizeof(ACPI_INTERFACE_STANDARD2),
-		1,
-		NULL);
+	// TODO: We need to implement this
+	// NTSTATUS acpiNotifyStatus = WdfFdoQueryForInterface(FxDevice,
+	// 	&GUID_ACPI_INTERFACE_STANDARD2,
+	// 	(PINTERFACE)&pDevice->S0ixNotifyAcpiInterface,
+	// 	sizeof(ACPI_INTERFACE_STANDARD2),
+	// 	1,
+	// 	NULL);
 
-	if (NT_SUCCESS(acpiNotifyStatus)) {
-		struct ec_params_get_cmd_versions_v1 req_v1 = { 0 };
-		struct ec_response_get_cmd_versions resp = { 0 };
-		req_v1.cmd = EC_CMD_HOST_SLEEP_EVENT;
-		rv = ec_command_proto(EC_CMD_GET_CMD_VERSIONS, 1, &req_v1, sizeof(req_v1), &resp, sizeof(resp));
-		if (rv >= 0) {
-			pDevice->hostSleepV1 = (resp.version_mask & EC_VER_MASK(1)) != 0;
-		}
+	// if (NT_SUCCESS(acpiNotifyStatus)) {
+	// 	struct ec_params_get_cmd_versions_v1 req_v1 = { 0 };
+	// 	struct ec_response_get_cmd_versions resp = { 0 };
+	// 	req_v1.cmd = EC_CMD_HOST_SLEEP_EVENT;
+	// 	rv = ec_command_proto(EC_CMD_GET_CMD_VERSIONS, 1, &req_v1, sizeof(req_v1), &resp, sizeof(resp));
+	// 	if (rv >= 0) {
+	// 		pDevice->hostSleepV1 = (resp.version_mask & EC_VER_MASK(1)) != 0;
+	// 	}
 
-		acpiNotifyStatus = pDevice->S0ixNotifyAcpiInterface.RegisterForDeviceNotifications(
-			pDevice->S0ixNotifyAcpiInterface.Context,
-			(PDEVICE_NOTIFY_CALLBACK2)CrosEcBusS0ixNotifyCallback,
-			pDevice);
-		if (!NT_SUCCESS(acpiNotifyStatus)) {
-			DbgPrint("Warning: Failed to register notifications on ACPI device\n");
-		}
-	}
-	else {
-		DbgPrint("Warning: Failed to get ACPI device\n");
-	}
+	// 	acpiNotifyStatus = pDevice->S0ixNotifyAcpiInterface.RegisterForDeviceNotifications(
+	// 		pDevice->S0ixNotifyAcpiInterface.Context,
+	// 		(PDEVICE_NOTIFY_CALLBACK2)CrosEcBusS0ixNotifyCallback,
+	// 		pDevice);
+	// 	if (!NT_SUCCESS(acpiNotifyStatus)) {
+	// 		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_CROSECBUS, "Warning: Failed to register notifications on ACPI device\n");
+	// 	}
+	// }
+	// else {
+	// 	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_CROSECBUS, "Warning: Failed to get ACPI device\n");
+	// }
+
+	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_CROSECBUS, "OnPrepareHardware finished %!STATUS!", status);
 
 	return status;
 }
@@ -374,7 +374,7 @@ static NTSTATUS send_ec_command(
 	UINT8* in,
 	size_t inSize)
 {
-	PCROSEC_COMMAND msg = (PCROSEC_COMMAND)ExAllocatePoolWithTag(NonPagedPool, sizeof(CROSEC_COMMAND) + max(outSize, inSize), CROSECBUS_POOL_TAG);
+	PCROSEC_COMMAND msg = (PCROSEC_COMMAND)ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(CROSEC_COMMAND) + max(outSize, inSize), CROSECBUS_POOL_TAG);
 	if (!msg) {
 		return STATUS_NO_MEMORY;
 	}
@@ -461,9 +461,9 @@ Status
 --*/
 {
 	UNREFERENCED_PARAMETER(FxTargetState);
+	UNREFERENCED_PARAMETER(FxDevice);
 
 	NTSTATUS status = STATUS_SUCCESS;
-	PCROSECBUS_CONTEXT pDevice = GetDeviceContext(FxDevice);
 
 	return status;
 }
@@ -526,7 +526,7 @@ NTSTATUS CrosEcBusSleepEvent(
 	UINT8 sleepEvent
 ) {
 	if (!pDevice->hostSleepV1) {
-		DbgPrint("Warning: EC does not support S0ix!\n");
+		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_CROSECBUS, "Warning: EC does not support S0ix!\n");
 		return STATUS_NOT_SUPPORTED;
 	}
 
@@ -571,7 +571,7 @@ IN PWDFDEVICE_INIT DeviceInit
 
 	PAGED_CODE();
 
-	CrosEcBusPrint(DEBUG_LEVEL_INFO, DBG_PNP,
+	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_CROSECBUS,
 		"CrosEcBusEvtDeviceAdd called\n");
 
 	{
@@ -593,7 +593,7 @@ IN PWDFDEVICE_INIT DeviceInit
 			&Name
 		);
 		if (!NT_SUCCESS(status)) {
-			CrosEcBusPrint(DEBUG_LEVEL_ERROR, DBG_PNP,
+			TraceEvents(TRACE_LEVEL_ERROR, TRACE_CROSECBUS,
 				"WdfDeviceInitAssignName failed 0x%x\n", status);
 			return status;
 		}
@@ -618,7 +618,7 @@ IN PWDFDEVICE_INIT DeviceInit
 
 	if (!NT_SUCCESS(status))
 	{
-		CrosEcBusPrint(DEBUG_LEVEL_ERROR, DBG_PNP,
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_CROSECBUS,
 			"WdfDeviceCreate failed with status code 0x%x\n", status);
 
 		return status;
@@ -645,7 +645,7 @@ IN PWDFDEVICE_INIT DeviceInit
 
 	status = CrosECQueueInitialize(device);
 	if (!NT_SUCCESS(status)) {
-		CrosEcBusPrint(DEBUG_LEVEL_ERROR, DBG_PNP,
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_CROSECBUS,
 			"CrosECQueueInitialize failed 0x%x\n", status);
 		return status;
 	}
@@ -658,7 +658,7 @@ IN PWDFDEVICE_INIT DeviceInit
 		&dosDeviceName
 	);
 	if (!NT_SUCCESS(status)) {
-		CrosEcBusPrint(DEBUG_LEVEL_ERROR, DBG_PNP,
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_CROSECBUS,
 			"WdfDeviceCreateSymbolicLink failed 0x%x\n", status);
 		return status;
 	}
@@ -687,7 +687,7 @@ IN PWDFDEVICE_INIT DeviceInit
 
 		status = WdfDeviceAddQueryInterface(device, &qiConfig);
 		if (!NT_SUCCESS(status)) {
-			CrosEcBusPrint(DEBUG_LEVEL_ERROR, DBG_PNP,
+			TraceEvents(TRACE_LEVEL_ERROR, TRACE_CROSECBUS,
 				"WdfDeviceAddQueryInterface failed 0x%x\n", status);
 
 			return status;
@@ -719,7 +719,7 @@ IN PWDFDEVICE_INIT DeviceInit
 
 		status = WdfDeviceAddQueryInterface(device, &qiConfig);
 		if (!NT_SUCCESS(status)) {
-			CrosEcBusPrint(DEBUG_LEVEL_ERROR, DBG_PNP,
+			TraceEvents(TRACE_LEVEL_ERROR, TRACE_CROSECBUS,
 				"WdfDeviceAddQueryInterface failed 0x%x\n", status);
 
 			return status;

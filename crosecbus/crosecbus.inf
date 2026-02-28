@@ -15,13 +15,14 @@
 Signature   = "$WINDOWS NT$"
 Class       = System
 ClassGuid   = {4d36e97d-e325-11ce-bfc1-08002be10318}
-Provider    = CoolStar
-DriverVer   = 12/16/2021,2.1.0
+Provider    = Framework Computer
+DriverVer   = 10/24/2024,0.0.0.6
 CatalogFile = crosecbus.cat
 PnpLockdown = 1
 
 [DestinationDirs]
 DefaultDestDir = 12
+CrosEC_Device_CoInstaller_CopyFiles = 11
 
 ; ================= Class section =====================
 
@@ -30,6 +31,7 @@ DefaultDestDir = 12
 
 [SourceDisksFiles]
 crosecbus.sys  = 1,,
+WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll=1 ; make sure the number matches with SourceDisksNames
 
 ;*****************************************
 ; CrosEcBus  Install Section
@@ -41,7 +43,7 @@ crosecbus.sys  = 1,,
 ; Decorated model section take precedence over undecorated 
 ; ones on XP and later.
 [Standard.NT$ARCH$]
-%CrosEcBus.DeviceDesc%=CrosEcBus_Device, ACPI\GOOG0004
+%CrosEcBus.DeviceDesc%=CrosEcBus_Device, ACPI\FRMWC004
 
 [CrosEcBus_Device.NT]
 CopyFiles=Drivers_Dir
@@ -55,6 +57,7 @@ crosecbus.sys
 [CrosEcBus_AddReg]
 ; Set to 1 to connect the first interrupt resource found, 0 to leave disconnected
 HKR,Settings,"ConnectInterrupt",0x00010001,0
+HKR,,Security,,"D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;GA;;;UD)"  ;System, Admin, and UMDF drivers
 
 ;-------------- Service installation
 [CrosEcBus_Device.NT.Services]
@@ -71,7 +74,7 @@ LoadOrderGroup = Base
 
 [Strings]
 SPSVCINST_ASSOCSERVICE= 0x00000002
-StdMfg                 = "CoolStar"
+StdMfg                 = "Framework"
 DiskId1                = "Chrome EC Installation Disk #1"
-CrosEcBus.DeviceDesc = "Chromebook EC Bus"
+CrosEcBus.DeviceDesc = "Framework EC"
 CrosEcBus.SVCDESC    = "Chrome EC Service"

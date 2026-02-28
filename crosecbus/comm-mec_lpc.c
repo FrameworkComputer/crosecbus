@@ -1,5 +1,6 @@
 #include "driver.h"
 #include "comm-host.h" 
+#include "comm-mec_lpc.tmh"
 
 static __inline void outb(unsigned char __val, unsigned int __port) {
 	WRITE_PORT_UCHAR((PUCHAR)__port, __val);
@@ -17,9 +18,6 @@ static __inline unsigned short inw(unsigned int __port) {
 	return READ_PORT_USHORT((PUSHORT)__port);
 }
 
-
-static ULONG CrosEcBusDebugLevel = 100;
-static ULONG CrosEcBusDebugCatagories = DBG_INIT || DBG_PNP || DBG_IOCTL;
 
 FAST_MUTEX MecAccessMutex;
 
