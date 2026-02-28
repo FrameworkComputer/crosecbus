@@ -53,65 +53,8 @@ static NTSTATUS sCrosECErrorCodeMapping[] = {
 
 static void decode_result_code(int res)
 {
-	char *name = NULL;
-	switch (res) {
-	case EC_RES_SUCCESS:
-		name = "SUCCES";
-		break;
-	case EC_RES_INVALID_COMMAND:
-		name = "INVALID_COMMAND";
-		break;
-	case EC_RES_ERROR:
-		name = "ERROR";
-		break;
-	case EC_RES_INVALID_PARAM:
-		name = "INVALID_PARAM";
-		break;
-	case EC_RES_ACCESS_DENIED:
-		name = "ACCESS_DENIED";
-		break;
-	case EC_RES_INVALID_RESPONSE:
-		name = "INVALID_RRESPONSE";
-		break;
-	case EC_RES_INVALID_VERSION:
-		name = "INVALID_VERSION";
-		break;
-	case EC_RES_INVALID_CHECKSUM:
-		name = "INVALID_CHECKSUM";
-		break;
-	case EC_RES_IN_PROGRESS:
-		name = "IN_PROGRESS";
-		break;
-	case EC_RES_UNAVAILABLE:
-		name = "UNAVAILABLE";
-		break;
-	case EC_RES_TIMEOUT:
-		name = "TIMEOUT";
-		break;
-	case EC_RES_OVERFLOW:
-		name = "OVERFLOW";
-		break;
-	case EC_RES_INVALID_HEADER:
-		name = "INVALID_HEADER";
-		break;
-	case EC_RES_REQUEST_TRUNCATED:
-		name = "REQUEST_TRUNCATED";
-		break;
-	case EC_RES_RESPONSE_TOO_BIG:
-		name = "RESPONSE_TOO_BIG";
-		break;
-	case EC_RES_BUS_ERROR:
-	case EC_RES_BUSY:
-	case EC_RES_INVALID_HEADER_VERSION:
-	case EC_RES_INVALID_HEADER_CRC:
-	case EC_RES_INVALID_DATA_CRC:
-	case EC_RES_DUP_UNAVAILABLE:
-	default:
-		name = "Unknown";
-		break;
-	}
 	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_USERSPACEQUEUE,
-		"  Error code %d => %s\n", res, name);
+		"  Error code %d => %s\n", res, ec_result_to_string(res));
 }
 
 NTSTATUS CrosECQueueInitialize(_In_ WDFDEVICE Device) {

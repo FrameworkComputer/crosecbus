@@ -198,6 +198,7 @@ Status
 			}
 
 			TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_CROSECBUS, "Found Sync GPIO!\n");
+			break;
 		default:
 			//
 			// Ignoring all other resource types.
