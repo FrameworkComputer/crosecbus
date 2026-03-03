@@ -21,8 +21,7 @@ CatalogFile = crosecbus.cat
 PnpLockdown = 1
 
 [DestinationDirs]
-DefaultDestDir = 12
-CrosEC_Device_CoInstaller_CopyFiles = 11
+DefaultDestDir = 13
 
 ; ================= Class section =====================
 
@@ -31,18 +30,15 @@ CrosEC_Device_CoInstaller_CopyFiles = 11
 
 [SourceDisksFiles]
 crosecbus.sys  = 1,,
-WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll=1 ; make sure the number matches with SourceDisksNames
 
 ;*****************************************
 ; CrosEcBus  Install Section
 ;*****************************************
 
 [Manufacturer]
-%StdMfg%=Standard,NT$ARCH$
+%StdMfg%=Standard,NT$ARCH$.10.0...16299
 
-; Decorated model section take precedence over undecorated 
-; ones on XP and later.
-[Standard.NT$ARCH$]
+[Standard.NT$ARCH$.10.0...16299]
 %CrosEcBus.DeviceDesc%=CrosEcBus_Device, ACPI\FRMWC004
 
 [CrosEcBus_Device.NT]
@@ -63,13 +59,20 @@ HKR,,Security,,"D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;GA;;;UD)"  ;System, Admin, and UM
 [CrosEcBus_Device.NT.Services]
 AddService = CrosEcBus,%SPSVCINST_ASSOCSERVICE%, CrosEcBus_Service_Inst
 
+; -------------- WDF install section
+[CrosEcBus_Device.NT.Wdf]
+KmdfService = CrosEcBus, CrosEcBus_wdfsect
+
+[CrosEcBus_wdfsect]
+KmdfLibraryVersion = $KMDFVERSION$
+
 ; -------------- CrosEcBus driver install sections
 [CrosEcBus_Service_Inst]
 DisplayName    = %CrosEcBus.SVCDESC%
 ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
 StartType      = 3               ; SERVICE_DEMAND_START 
 ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
-ServiceBinary  = %12%\crosecbus.sys
+ServiceBinary  = %13%\crosecbus.sys
 LoadOrderGroup = Base
 
 [Strings]

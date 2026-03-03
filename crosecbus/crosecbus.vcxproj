@@ -85,7 +85,7 @@
       <WppRecorderEnabled>true</WppRecorderEnabled>
       <WppScanConfigurationData Condition="'%(ClCompile. ScanConfigurationData)'  == ''">trace.h</WppScanConfigurationData>
       <WppKernelMode>true</WppKernelMode>
-      <TreatWarningAsError>false</TreatWarningAsError>
+      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Inf>
       <TimeStamp>0.0.0.6</TimeStamp>
@@ -100,7 +100,7 @@
       <WppRecorderEnabled>true</WppRecorderEnabled>
       <WppScanConfigurationData Condition="'%(ClCompile. ScanConfigurationData)'  == ''">trace.h</WppScanConfigurationData>
       <WppKernelMode>true</WppKernelMode>
-      <TreatWarningAsError>false</TreatWarningAsError>
+      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Inf>
       <TimeStamp>0.0.0.6</TimeStamp>
@@ -115,7 +115,7 @@
       <WppRecorderEnabled>true</WppRecorderEnabled>
       <WppScanConfigurationData Condition="'%(ClCompile. ScanConfigurationData)'  == ''">trace.h</WppScanConfigurationData>
       <WppKernelMode>true</WppKernelMode>
-      <TreatWarningAsError>false</TreatWarningAsError>
+      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Inf>
       <TimeStamp>0.0.0.6</TimeStamp>
@@ -130,7 +130,7 @@
       <WppRecorderEnabled>true</WppRecorderEnabled>
       <WppScanConfigurationData Condition="'%(ClCompile. ScanConfigurationData)'  == ''">trace.h</WppScanConfigurationData>
       <WppKernelMode>true</WppKernelMode>
-      <TreatWarningAsError>false</TreatWarningAsError>
+      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Inf>
       <TimeStamp>0.0.0.6</TimeStamp>
