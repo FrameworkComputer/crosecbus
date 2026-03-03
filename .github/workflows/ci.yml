@@ -30,3 +30,20 @@ jobs:
         env:
           Configuration: ${{ matrix.configuration }}
           Platform: ${{ matrix.platform }}
+
+      - name: Create bundle
+        run: |
+          mkdir bundle
+          cp ${{ env.platform }}\${{ matrix.configuration }}\crosecbus\crosecbus.sys bundle\
+          cp ${{ env.platform }}\${{ matrix.configuration }}\crosecbus\crosecbus.inf bundle\
+          cp ${{ env.platform }}\${{ matrix.configuration }}\crosecbus\crosecbus.cat bundle\
+          cp ${{ env.platform }}\${{ matrix.configuration }}\crosecbus.pdb bundle\
+        env:
+          Configuration: ${{ matrix.configuration }}
+          Platform: ${{ matrix.platform }}
+
+      - name: Upload bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: crosecbus_${{ matrix.configuration }}
+          path: bundle
