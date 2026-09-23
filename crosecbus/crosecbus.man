@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!--
+  Event manifest for crosecbus.sys
+
+  Compiled by mc.exe at build time (see MessageCompile in crosecbus.vcxproj)
+  into crosecbusEvents.h (EventRegister/EventWrite helpers) and
+  crosecbusEvents.rc (metadata resources embedded in crosecbus.sys).
+
+  The provider and channel are registered on install by the
+  [CrosEcBus_Device.NT.Events] section of crosecbus.inf. The provider GUID,
+  channel name and channel value must match the INF.
+-->
+<instrumentationManifest
+    xmlns="http://schemas.microsoft.com/win/2004/08/events"
+    xmlns:win="http://manifests.microsoft.com/win/2004/08/windows/events"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://schemas.microsoft.com/win/2004/08/events eventman.xsd"
+    >
+  <instrumentation>
+    <events>
+      <provider
+          guid="{265d94cd-c9ff-4cac-8f4f-28f037e32f68}"
+          messageFileName="crosecbus.sys"
+          name="Framework-CrosEcBus"
+          resourceFileName="crosecbus.sys"
+          symbol="CrosEcBusProviderGuid"
+          >
+        <channels>
+          <channel
+              chid="Console"
+              enabled="true"
+              name="Framework-CrosEcBus/Console"
+              type="Operational"
+              value="16"
+              />
+        </channels>
+        <templates>
+          <template tid="tid_console_line">
+            <data
+                inType="win:AnsiString"
+                name="Line"
+                outType="xs:string"
+                />
+          </template>
+          <template tid="tid_console_log_started">
+            <data
+                inType="win:AnsiString"
+                name="EcVersionRo"
+                outType="xs:string"
+                />
+            <data
+                inType="win:AnsiString"
+                name="EcVersionRw"
+                outType="xs:string"
+                />
+          </template>
+        </templates>
+        <events>
+          <event
+              channel="Console"
+              level="win:Informational"
+              message="$(string.ConsoleLine.EventMessage)"
+              symbol="ConsoleLine"
+              template="tid_console_line"
+              value="1"
+              />
+          <event
+              channel="Console"
+              level="win:Informational"
+              message="$(string.ConsoleLogStarted.EventMessage)"
+              symbol="ConsoleLogStarted"
+              template="tid_console_log_started"
+              value="2"
+              />
+        </events>
+      </provider>
+    </events>
+  </instrumentation>
+  <localization xmlns="http://schemas.microsoft.com/win/2004/08/events">
+    <resources culture="en-US">
+      <stringTable>
+        <string
+            id="ConsoleLine.EventMessage"
+            value="%1"
+            />
+        <string
+            id="ConsoleLogStarted.EventMessage"
+            value="EC console log started (RO %1, RW %2)"
+            />
+      </stringTable>
+    </resources>
+  </localization>
+</instrumentationManifest>

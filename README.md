@@ -30,3 +30,44 @@ Protocols Implemented:
 Note: Framework laptop does not implement GOOG0004 ACPI device. Override DSDT/SSDT with testsigning or with OpenCore to add it. (See https://github.com/coreboot/coreboot/blob/master/src/ec/google/chromeec/acpi/cros_ec.asl for an example)
 
 Tested on HP Chromebook 14b (Ryzen 3 3250C)
+
+## EC console log
+
+The EC keeps its console output in a small ring buffer, so older output gets overwritten.
+The driver copies it into the Windows Event Log so it survives reboots.
+
+* Channel: `Framework-CrosEcBus/Console` (Event Viewer: Applications and Services Logs > Framework-CrosEcBus > Console)
+* One event per console line (event ID 1). Every time the driver loads, typically once per boot, it writes a
+  marker with the EC firmware version (event ID 2), then the whole current EC buffer, which includes output
+  from before Windows started and from the end of the previous boot.
+* The log is capped at 10 MB; the oldest events are overwritten. Change the size with
+  `wevtutil sl Framework-CrosEcBus/Console /ms:<bytes>`
+* Requires Windows 10 1809 or later
+
+Read it as text (PowerShell):
+
+```powershell
+# Whole log, oldest first
+Get-WinEvent -LogName Framework-CrosEcBus/Console -Oldest |
+  ForEach-Object { "{0:yyyy-MM-dd HH:mm:ss} {1}" -f $_.TimeCreated, $_.Message }
+
+# Current boot only
+$start = Get-WinEvent -LogName Framework-CrosEcBus/Console -FilterXPath "*[System[EventID=2]]" -MaxEvents 1
+Get-WinEvent -LogName Framework-CrosEcBus/Console -Oldest |
+  Where-Object TimeCreated -ge $start.TimeCreated | ForEach-Object Message
+
+# Save to a file
+Get-WinEvent -LogName Framework-CrosEcBus/Console -Oldest | ForEach-Object Message | Set-Content ec-console.txt
+```
+
+Or from cmd: `wevtutil qe Framework-CrosEcBus/Console /f:text`
+
+Settings (DWORD values under the device's hardware key, `HKLM\SYSTEM\CurrentControlSet\Enum\<device instance>\Device Parameters\Settings`,
+take effect after the device is restarted):
+
+* `ConsoleLogEnabled`: 1 (default) to log, 0 to disable
+* `ConsoleLogPollMs`: how often to read the EC console, in milliseconds (default 15000, minimum 1000)
+
+Note: the driver and tools such as `framework_tool --console` or `ectool console` share the same EC read
+position. If you use them while logging is enabled, each side will miss some of the output.
+Set `ConsoleLogEnabled` to 0 if you need those tools to see everything.

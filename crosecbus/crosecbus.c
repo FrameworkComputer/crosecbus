@@ -35,7 +35,10 @@ __in PUNICODE_STRING RegistryPath
 	WPP_INIT_TRACING(DriverObject, RegistryPath);
 	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_CROSECBUS, "DriverEntry: Entry");
 
+	CrosEcConsoleLogRegisterProvider();
+
 	WDF_DRIVER_CONFIG_INIT(&config, CrosEcBusEvtDeviceAdd);
+	config.EvtDriverUnload = CrosEcBusDriverUnload;
 
 	WDF_OBJECT_ATTRIBUTES_INIT(&attributes);
 
@@ -53,10 +56,20 @@ __in PUNICODE_STRING RegistryPath
 	if (!NT_SUCCESS(status))
 	{
 		TraceEvents(TRACE_LEVEL_ERROR, TRACE_CROSECBUS, "WdfDriverCreate failed %!STATUS!", status);
+		CrosEcConsoleLogUnregisterProvider();
 		WPP_CLEANUP(DriverObject);
 	}
 
 	return status;
+}
+
+VOID
+CrosEcBusDriverUnload(
+	_In_ WDFDRIVER Driver
+)
+{
+	CrosEcConsoleLogUnregisterProvider();
+	WPP_CLEANUP(WdfDriverWdmGetDriverObject(Driver));
 }
 
 static NTSTATUS CrosEcCmdXferStatus(
@@ -286,6 +299,12 @@ Status
 	// 	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_CROSECBUS, "Warning: Failed to get ACPI device\n");
 	// }
 
+	// Failure to start console logging is not fatal
+	NTSTATUS consoleLogStatus = CrosEcConsoleLogStart(pDevice);
+	if (!NT_SUCCESS(consoleLogStatus)) {
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_CROSECBUS, "Failed to start EC console logging %!STATUS!", consoleLogStatus);
+	}
+
 	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_CROSECBUS, "OnPrepareHardware finished %!STATUS!", status);
 
 	return status;
@@ -348,6 +367,9 @@ Status
 
 	PCROSECBUS_CONTEXT pDevice = GetDeviceContext(FxDevice);
 	UNREFERENCED_PARAMETER(FxResourcesTranslated);
+
+	// Stop (and do a final read) before the EC lock goes away
+	CrosEcConsoleLogStop(pDevice);
 
 	if (pDevice->S0ixNotifyAcpiInterface.Context) { //Used for S0ix notifications
 		pDevice->S0ixNotifyAcpiInterface.UnregisterForDeviceNotifications(pDevice->S0ixNotifyAcpiInterface.Context);
