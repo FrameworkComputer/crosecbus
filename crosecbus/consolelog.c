@@ -18,6 +18,12 @@ static VOID CrosEcConsoleLogEnableCallback(
 #include "crosecbusEvents.h"
 #include "consolelog.tmh"
 
+// Declared in ntifs.h, which can't be included alongside wdm.h
+NTSYSAPI NTSTATUS NTAPI ZwWaitForSingleObject(
+	_In_ HANDLE Handle,
+	_In_ BOOLEAN Alertable,
+	_In_opt_ PLARGE_INTEGER Timeout);
+
 #define CROSEC_CONSOLE_POLL_MS_DEFAULT 15000
 #define CROSEC_CONSOLE_POLL_MS_MIN     1000
 // Upper bound on read commands per poll, in case the EC keeps producing output
