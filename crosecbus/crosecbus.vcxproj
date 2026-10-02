@@ -91,7 +91,7 @@
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(IntDir)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Inf>
-      <TimeStamp>0.0.8.0</TimeStamp>
+      <TimeStamp>0.0.9.0</TimeStamp>
     </Inf>
     <DriverSign>
       <FileDigestAlgorithm>SHA256</FileDigestAlgorithm>
@@ -109,7 +109,7 @@
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(IntDir)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Inf>
-      <TimeStamp>0.0.8.0</TimeStamp>
+      <TimeStamp>0.0.9.0</TimeStamp>
     </Inf>
     <DriverSign>
       <FileDigestAlgorithm>SHA256</FileDigestAlgorithm>
@@ -127,7 +127,7 @@
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(IntDir)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Inf>
-      <TimeStamp>0.0.8.0</TimeStamp>
+      <TimeStamp>0.0.9.0</TimeStamp>
     </Inf>
     <DriverSign>
       <FileDigestAlgorithm>SHA256</FileDigestAlgorithm>
@@ -145,7 +145,7 @@
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(IntDir)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Inf>
-      <TimeStamp>0.0.8.0</TimeStamp>
+      <TimeStamp>0.0.9.0</TimeStamp>
     </Inf>
     <DriverSign>
       <FileDigestAlgorithm>SHA256</FileDigestAlgorithm>
