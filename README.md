@@ -71,3 +71,85 @@ take effect after the device is restarted):
 Note: the driver and tools such as `framework_tool --console` or `ectool console` share the same EC read
 position. If you use them while logging is enabled, each side will miss some of the output.
 Set `ConsoleLogEnabled` to 0 if you need those tools to see everything.
+
+### Troubleshooting the EC console log
+
+The version number alone doesn't tell builds apart. To check that the installed driver is the one you built,
+compare hashes:
+
+```powershell
+$dev = Get-PnpDevice -InstanceId 'ACPI\FRMWC004*'
+Get-PnpDeviceProperty -InstanceId $dev.InstanceId -KeyName DEVPKEY_Device_DriverInfPath, DEVPKEY_Device_DriverVersion, DEVPKEY_Device_DriverDate
+(Get-CimInstance Win32_SystemDriver -Filter "Name='CrosEcBus'").PathName   # the .sys that is running
+Get-FileHash <that path>, <your build>\crosecbus.sys                         # should match
+```
+
+Check each link in the chain:
+
+```powershell
+# 1. Provider registered (only exists if the INF's Events section was installed)
+wevtutil gp Framework-CrosEcBus
+
+# 2. Channel exists, is enabled ("enabled: true") and has "isolation: System"
+wevtutil gl Framework-CrosEcBus/Console
+#    If it says false: wevtutil sl Framework-CrosEcBus/Console /e:true
+#    If it says "isolation: Application" (installed by an older build of this branch), events from
+#    the driver never reach the log. Fix it without reinstalling:
+#      Set-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WINEVT\Channels\Framework-CrosEcBus/Console' Isolation 1
+#      wevtutil sl Framework-CrosEcBus/Console /e:false; wevtutil sl Framework-CrosEcBus/Console /e:true
+#    (The registry uses 1 for System; the INF's Isolation directive uses 2.)
+
+# 3. Number of events in the log ("numberOfLogRecords")
+wevtutil gli Framework-CrosEcBus/Console
+
+# 4. The Event Log service is listening to the driver. The driver only reads the
+#    EC console while this is true, so the data isn't consumed when nobody records it.
+#    Expect "Framework-CrosEcBus" with KeywordsAny 0x8000000000000000.
+logman query EventLog-System -ets | Select-String -Context 0,4 CrosEcBus
+
+# 5. The driver has the provider registered (a row with PID 0x00000000 = kernel)
+logman query providers Framework-CrosEcBus
+
+# 6. Settings: ConsoleLogEnabled should be 1
+Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Enum\$((Get-PnpDevice -InstanceId 'ACPI\FRMWC004*').InstanceId)\Device Parameters\Settings"
+```
+
+The driver writes event ID 2 on the first poll after it starts, even if the EC buffer is empty. If the log
+stays empty for more than one poll interval, capture the driver's WPP trace (as admin) while restarting the device:
+
+```powershell
+logman create trace CrosEcBusWpp -p '{73e3b785-f5fb-423e-94a9-56627fea9053}' 0xFFFFFFFF 0xFF -o crosecbus.etl -ets
+pnputil /restart-device "ACPI\FRMWC004\1"
+# wait at least one poll interval
+logman stop CrosEcBusWpp -ets
+```
+
+Decoding needs the TMF format strings from the matching `crosecbus.pdb` (CI uploads it next to the `.sys`).
+With the WDK: `tracepdb -f crosecbus.pdb -p tmf`, then `tracefmt crosecbus.etl -p tmf -o crosecbus.txt`.
+Without the WDK, pull them out of the PDB and decode with the built-in `tracerpt`:
+
+```powershell
+New-Item -ItemType Directory -Force tmf | Out-Null
+$s = [Text.Encoding]::ASCII.GetString([IO.File]::ReadAllBytes("$PWD\crosecbus.pdb"))
+foreach ($r in [regex]::Matches($s, 'TMF:\x00((?:[^\x00]+\x00)+?)\x00')) {
+  $lines = $r.Groups[1].Value.TrimEnd([char]0).Split([char]0)
+  Add-Content -Path "tmf\$($lines[0].Split(' ')[0]).tmf" -Value ($lines -join "`r`n") -Encoding ASCII
+}
+tracerpt crosecbus.etl -o crosecbus.csv -of CSV -tp tmf -y
+```
+
+To tell whether the driver writes events at all, independent of the Event Log service, record the provider
+in a session of your own. Starting it also makes the driver poll right away:
+
+```powershell
+logman create trace CrosEcBusEvents -p Framework-CrosEcBus 0xFFFFFFFFFFFFFFFF 0xFF -o events.etl -ets
+# wait a few seconds
+logman stop CrosEcBusEvents -ets
+Get-WinEvent -Path events.etl -Oldest | Select-Object TimeCreated, Id, Message
+```
+
+If events show up here but not in the channel, the problem is the channel configuration (see step 2).
+
+Messages from the console logger to look for: `EC console logging started, polling every N ms`,
+`EC console logging disabled`, `Failed to start EC console logging`, `Console snapshot failed` and
+`Console read failed`.
