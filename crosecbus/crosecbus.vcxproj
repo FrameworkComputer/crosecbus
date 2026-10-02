@@ -87,8 +87,11 @@
       <WppKernelMode>true</WppKernelMode>
       <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(IntDir)</AdditionalIncludeDirectories>
+    </ResourceCompile>
     <Inf>
-      <TimeStamp>0.0.8.0</TimeStamp>
+      <TimeStamp>0.0.9.0</TimeStamp>
     </Inf>
     <DriverSign>
       <FileDigestAlgorithm>SHA256</FileDigestAlgorithm>
@@ -102,8 +105,11 @@
       <WppKernelMode>true</WppKernelMode>
       <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(IntDir)</AdditionalIncludeDirectories>
+    </ResourceCompile>
     <Inf>
-      <TimeStamp>0.0.8.0</TimeStamp>
+      <TimeStamp>0.0.9.0</TimeStamp>
     </Inf>
     <DriverSign>
       <FileDigestAlgorithm>SHA256</FileDigestAlgorithm>
@@ -117,8 +123,11 @@
       <WppKernelMode>true</WppKernelMode>
       <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(IntDir)</AdditionalIncludeDirectories>
+    </ResourceCompile>
     <Inf>
-      <TimeStamp>0.0.8.0</TimeStamp>
+      <TimeStamp>0.0.9.0</TimeStamp>
     </Inf>
     <DriverSign>
       <FileDigestAlgorithm>SHA256</FileDigestAlgorithm>
@@ -132,8 +141,11 @@
       <WppKernelMode>true</WppKernelMode>
       <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(IntDir)</AdditionalIncludeDirectories>
+    </ResourceCompile>
     <Inf>
-      <TimeStamp>0.0.8.0</TimeStamp>
+      <TimeStamp>0.0.9.0</TimeStamp>
     </Inf>
     <DriverSign>
       <FileDigestAlgorithm>SHA256</FileDigestAlgorithm>
@@ -148,6 +160,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="comm-host.h" />
+    <ClInclude Include="consolelog.h" />
     <ClInclude Include="driver.h" />
     <ClInclude Include="crosecbus.h" />
     <ClInclude Include="ec_commands.h" />
@@ -158,11 +171,24 @@
   <ItemGroup>
     <ClCompile Include="comm-lpc.c" />
     <ClCompile Include="comm-mec_lpc.c" />
+    <ClCompile Include="consolelog.c" />
     <ClCompile Include="crosecbus.c" />
     <ClCompile Include="userspaceQueue.c" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="crosecbus.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <MessageCompile Include="crosecbus.man">
+      <GenerateKernelModeLoggingMacros>true</GenerateKernelModeLoggingMacros>
+      <HeaderFilePath>.\$(IntDir)</HeaderFilePath>
+      <GeneratedHeaderPath>true</GeneratedHeaderPath>
+      <WinmetaPath>"$(SDK_INC_PATH)\winmeta.xml"</WinmetaPath>
+      <RCFilePath>.\$(IntDir)</RCFilePath>
+      <GeneratedRCAndMessagesPath>true</GeneratedRCAndMessagesPath>
+      <GeneratedFilesBaseName>crosecbusEvents</GeneratedFilesBaseName>
+      <UseBaseNameOfInput>true</UseBaseNameOfInput>
+    </MessageCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

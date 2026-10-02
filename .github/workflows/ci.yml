@@ -15,6 +15,8 @@ jobs:
 
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
+        with:
+          msbuild-architecture: x64
 
       - name: Build solution
         run: |
@@ -42,8 +44,13 @@ jobs:
           Configuration: ${{ matrix.configuration }}
           Platform: ${{ matrix.platform }}
 
+      - name: Get short commit hash
+        id: commit
+        run: |
+          "short_sha=$(git rev-parse --short HEAD)" >> $env:GITHUB_OUTPUT
+
       - name: Upload bundle
         uses: actions/upload-artifact@v4
         with:
-          name: crosecbus_${{ matrix.configuration }}
+          name: crosecbus_${{ matrix.configuration }}_${{ steps.commit.outputs.short_sha }}
           path: bundle

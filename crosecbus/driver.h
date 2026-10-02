@@ -20,6 +20,7 @@
 #include <acpiioct.h>
 
 #include "trace.h"
+#include "consolelog.h"
 
 //
 // String definitions
@@ -130,6 +131,8 @@ typedef struct _CROSECBUS_CONTEXT
     ACPI_INTERFACE_STANDARD2 S0ixNotifyAcpiInterface;
     BOOLEAN isInS0ix;
     BOOLEAN hostSleepV1;
+
+    CROSEC_CONSOLE_LOG ConsoleLog;
 
 } CROSECBUS_CONTEXT, *PCROSECBUS_CONTEXT;
 

@@ -2243,4 +2243,37 @@ enum ec_host_event_mask_type {
 
 #define EC_CMD_HOST_EVENT 0x00A4
 
+/*****************************************************************************/
+/* EC console commands */
+
+/* Save a snapshot of the EC console output buffer (no params, no response) */
+#define EC_CMD_CONSOLE_SNAPSHOT 0x0097
+
+/*
+ * Read data from the saved snapshot. If the subcmd parameter is
+ * CONSOLE_READ_NEXT, this will return data starting from the beginning of
+ * the latest snapshot. If it is CONSOLE_READ_RECENT, it will start from the
+ * end of the previous snapshot.
+ *
+ * The params are only looked at in version >= 1 of this command. Prior
+ * versions will just default to CONSOLE_READ_NEXT behavior.
+ *
+ * Response is null-terminated string.  Empty string, if there is no more
+ * remaining output.
+ */
+#define EC_CMD_CONSOLE_READ 0x0098
+
+enum ec_console_read_subcmd {
+	CONSOLE_READ_NEXT = 0,
+	CONSOLE_READ_RECENT
+};
+
+#include <pshpack1.h>
+
+struct ec_params_console_read_v1 {
+	UINT8 subcmd; /* enum ec_console_read_subcmd */
+};
+
+#include <poppack.h>
+
 #endif  /* __CROS_EC_COMMANDS_H */
