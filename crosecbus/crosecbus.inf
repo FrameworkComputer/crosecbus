@@ -74,6 +74,9 @@ MessageFile  = %13%\crosecbus.sys
 AddChannel   = Framework-CrosEcBus/Console, 0x2, CrosEcBus_ConsoleChannel ; Operational
 
 [CrosEcBus_ConsoleChannel]
+; Kernel-mode providers need System isolation (EventLog-System session).
+; With the default Application isolation no events reach the log.
+Isolation        = 2 ; System
 Enabled          = 1
 Value            = 16
 LoggingMaxSize   = 10485760 ; 10 MB

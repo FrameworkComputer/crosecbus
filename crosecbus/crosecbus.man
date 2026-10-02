@@ -30,6 +30,7 @@
           <channel
               chid="Console"
               enabled="true"
+              isolation="System"
               name="Framework-CrosEcBus/Console"
               type="Operational"
               value="16"
