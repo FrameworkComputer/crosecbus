@@ -61,13 +61,65 @@ static constexpr std::wstring_view gCrosECDeviceNodeHwidList{LR"(ROOT\CrosEC)"
                                                              14};
 static constexpr std::wstring_view gCrosECDeviceNode{gCrosECDeviceNodeHwidList.substr(0, 11)};
 
+// Firmware-enumerated EC device. If present, the driver binds to it and no root node is needed.
+static constexpr std::wstring_view gCrosECAcpiHwid{LR"(ACPI\FRMWC004)"};
+
+static std::set<std::wstring, std::less<>> GetHardwareIds(HDEVINFO devs, SP_DEVINFO_DATA* devInfo) {
+	std::vector<wchar_t> hwIdsMultiSz;
+	DWORD dataType{};
+	const HRESULT hr{wil::AdaptFixedSizeToAllocatedResult(hwIdsMultiSz, [&](PWSTR buffer, size_t size, size_t* needed) {
+		DWORD neededBytes;
+		RETURN_IF_WIN32_BOOL_FALSE(SetupDiGetDeviceRegistryPropertyW(
+			devs, devInfo, SPDRP_HARDWAREID, &dataType, (PBYTE)buffer, (DWORD)(size * sizeof(wchar_t)),
+			&neededBytes));
+		*needed = neededBytes / sizeof(wchar_t);
+		return S_OK;
+	})};
+	std::set<std::wstring, std::less<>> r;
+	if(FAILED(hr)) {  // e.g. device without hardware IDs
+		return r;
+	}
+	for(auto id : multiSzToSet(hwIdsMultiSz)) {
+		r.emplace(id);
+	}
+	return r;
+}
+
+static bool IsDevicePresent(std::wstring_view hwid) {
+	unique_hdevinfo devs;
+	devs.reset(SetupDiGetClassDevsExW(nullptr, nullptr, nullptr, DIGCF_ALLCLASSES | DIGCF_PRESENT, nullptr, nullptr,
+	                                  nullptr));
+	if(!devs) {
+		return false;
+	}
+
+	SP_DEVINFO_DATA devInfo{};
+	devInfo.cbSize = sizeof(devInfo);
+	for(DWORD devIndex = 0; SetupDiEnumDeviceInfo(devs.get(), devIndex, &devInfo); devIndex++) {
+		if(GetHardwareIds(devs.get(), &devInfo).contains(hwid)) {
+			return true;
+		}
+	}
+	return false;
+}
+
 static HRESULT Install() {
 	BOOL reboot{FALSE};
 
 	std::filesystem::path infPath{L"crosecbus.inf"};
 	infPath = std::filesystem::absolute(infPath);
 
-	fwprintf(stderr, L"  Absolute INF path: %s ", infPath.c_str());
+	fwprintf(stderr, L"  Absolute INF path: %s\n", infPath.c_str());
+
+	if(IsDevicePresent(gCrosECAcpiHwid)) {
+		const std::wstring hwid{gCrosECAcpiHwid};
+		fwprintf(stderr, L"  Found %s, not creating %s device node\n", hwid.c_str(), gCrosECDeviceNode.data());
+		fwprintf(stderr, L"  UpdateDriverForPlugAndPlayDevicesW\n");
+		RETURN_IF_WIN32_BOOL_FALSE(
+			UpdateDriverForPlugAndPlayDevicesW(nullptr, hwid.c_str(), infPath.native().c_str(), 0, &reboot));
+		fwprintf(stderr, L"  Install Finished\n");
+		return reboot ? S_REBOOT : S_OK;
+	}
 
 	GUID ClassGUID;
 	WCHAR ClassName[256];
@@ -118,18 +170,7 @@ static HRESULT RemoveCrosECDeviceNode() {
 		RETURN_HR_IF(E_FAIL,
 		             CR_SUCCESS != CM_Get_Device_IDW(devInfo.DevInst, devID, (DWORD)std::size(devID), 0));
 
-		std::vector<wchar_t> hwIdsMultiSz;
-		DWORD dataType{};
-		wil::AdaptFixedSizeToAllocatedResult(hwIdsMultiSz, [&](PWSTR buffer, size_t size, size_t* needed) {
-			DWORD neededBytes;
-			RETURN_IF_WIN32_BOOL_FALSE(SetupDiGetDeviceRegistryPropertyW(
-				devs.get(), &devInfo, SPDRP_HARDWAREID, &dataType, (PBYTE)buffer,
-				(DWORD)(size * sizeof(wchar_t)), &neededBytes));
-			*needed = neededBytes / sizeof(wchar_t);
-			return S_OK;
-		});
-		auto hwIds{multiSzToSet(hwIdsMultiSz)};
-		if(hwIds.contains(gCrosECDeviceNode)) {
+		if(GetHardwareIds(devs.get(), &devInfo).contains(gCrosECDeviceNode)) {
 			++found;
 			fwprintf(stderr, L"[+] Removing %s... ", devID);
 			if(!SetupDiCallClassInstaller(DIF_REMOVE, devs.get(), &devInfo)) {
