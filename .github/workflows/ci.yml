@@ -38,6 +38,7 @@ jobs:
           cp ${{ env.platform }}\${{ matrix.configuration }}\crosecbus\crosecbus.inf bundle\
           cp ${{ env.platform }}\${{ matrix.configuration }}\crosecbus\crosecbus.cat bundle\
           cp ${{ env.platform }}\${{ matrix.configuration }}\crosecbus.pdb bundle\
+          cp scripts\install-testsigned.ps1 bundle\
         env:
           Configuration: ${{ matrix.configuration }}
           Platform: ${{ matrix.platform }}
