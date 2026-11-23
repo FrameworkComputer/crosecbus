@@ -23,9 +23,6 @@
 	} while((void)0, 0)
 
 #define EC_CMD_USB_PD_FW_UPDATE 0x0110
-#define EC_CMD_FLASH_WRITE      0x0012
-#define EC_CMD_FLASH_ERASE      0x0013
-#define EC_CMD_FLASH_PROTECT    0x0015
 
 static NTSTATUS sCrosECErrorCodeMapping[] = {
 	[EC_RES_SUCCESS] = STATUS_SUCCESS,
@@ -110,16 +107,11 @@ NTSTATUS CrosECIoctlXCmd(_In_ PCROSECBUS_CONTEXT pDevice, _In_ WDFREQUEST Reques
 
 	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_USERSPACEQUEUE, "  Overflow/underflow checks successful");
 
-	// I know this seems overprotective, and that I am wielding too much power over you,
-	// but I don't think that the Windows driver should let you erase your EC flash.
-	// Since the device grants access to all administrators, that would put you one
-	// bad apple away from bricking your machine. Sorry.
+	// EC flash commands (FLASH_ERASE, FLASH_WRITE, FLASH_PROTECT) are passed
+	// through without restriction, so the whole EC flash (RO and RW) can be
+	// reflashed from userspace. Access to the device is limited to administrators.
 
-	//DHowett wrote the above, but I (CoolStar) agree ^^. If you need to update your EC, you should let coreboot update the RW portion
-
-	NT_RETURN_IF(STATUS_ACCESS_DENIED, cmd->Command == EC_CMD_FLASH_ERASE || cmd->Command == EC_CMD_FLASH_PROTECT ||
-		cmd->Command == EC_CMD_FLASH_WRITE ||
-		cmd->Command == EC_CMD_USB_PD_FW_UPDATE);
+	NT_RETURN_IF(STATUS_ACCESS_DENIED, cmd->Command == EC_CMD_USB_PD_FW_UPDATE);
 
 	int tries = 5; //Wait our turn if kernel driver wants to access first
 	while (tries > 0) {
