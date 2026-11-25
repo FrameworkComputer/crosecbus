@@ -125,8 +125,9 @@ foreach ($m in $modes) {
         $n = Get-PowerEventCount 506 'Microsoft-Windows-Kernel-Power' $modeStart
         Add-Check 'Entered Modern Standby' ($n -ge $Cycles) "$n x Kernel-Power 506 (expected $Cycles)"
     } else {
-        $n = Get-PowerEventCount 1 'Microsoft-Windows-Power-Troubleshooter' $modeStart
-        Add-Check 'Resumed from Hibernate' ($n -ge $Cycles) "$n x Power-Troubleshooter 1 (expected $Cycles)"
+        # Kernel-Power 107: "The system has resumed from sleep" (S4 included).
+        $n = Get-PowerEventCount 107 'Microsoft-Windows-Kernel-Power' $modeStart
+        Add-Check 'Resumed from Hibernate' ($n -ge $Cycles) "$n x Kernel-Power 107 (expected $Cycles)"
     }
 
     Invoke-SmokeTest "after-$m"
