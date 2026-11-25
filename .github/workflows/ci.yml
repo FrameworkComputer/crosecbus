@@ -1,0 +1,147 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.compare || github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.ref != format('refs/heads/{0}', github.event.repository.default_branch) }}
+
+env:
+  RUSTFLAGS: >-
+    -D warnings
+    -C target-feature=+crt-static
+
+jobs:
+  fmt:
+    name: Formatting
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install Rust Toolchain (Nightly)
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
+        with:
+          toolchain: nightly
+          components: rustfmt
+
+      # rustfmt.toml uses unstable options, so this needs nightly.
+      - name: Run Cargo Format
+        run: cargo +nightly fmt --all -- --check
+
+  test:
+    name: Protocol Tests
+    # crosec-proto has no WDK dependency, so no WDK/LLVM install is needed.
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install Rust Toolchain (Stable)
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
+        with:
+          toolchain: stable
+
+      - name: Run Tests
+        run: cargo test --locked -p crosec-proto
+
+  driver:
+    name: Driver (${{ matrix.rust_toolchain }})
+    strategy:
+      fail-fast: false
+      matrix:
+        rust_toolchain:
+          - stable
+          - nightly
+    runs-on: windows-latest
+    env:
+      WDK_VERSION: 10.0.26100
+      LLVM_VERSION: 17.0.6
+      TARGET: x86_64-pc-windows-msvc
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Checkout windows-drivers-rs actions
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: microsoft/windows-drivers-rs
+          ref: main
+          path: _temp/windows-drivers-rs
+          sparse-checkout: |
+            .github/actions
+          sparse-checkout-cone-mode: false
+
+      - name: Copy actions to workspace
+        shell: pwsh
+        run: Copy-Item -Recurse -Force _temp/windows-drivers-rs/.github/actions .github/
+
+      - name: Install Winget
+        uses: ./.github/actions/install-winget
+
+      - name: Install LLVM ${{ env.LLVM_VERSION }}
+        uses: ./.github/actions/install-llvm
+        with:
+          version: ${{ env.LLVM_VERSION }}
+
+      - name: Install WDK ${{ env.WDK_VERSION }}
+        uses: ./.github/actions/install-wdk
+        with:
+          version: ${{ env.WDK_VERSION }}
+          source: nuget
+          host: amd64
+          target: amd64
+
+      - name: Install Rust Toolchain (${{ matrix.rust_toolchain }})
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
+        with:
+          toolchain: ${{ matrix.rust_toolchain }}
+          components: clippy
+          targets: ${{ env.TARGET }}
+
+      - name: Run Cargo Clippy
+        run: cargo +${{ matrix.rust_toolchain }} clippy --locked --target ${{ env.TARGET }} --all-targets -- -D warnings
+
+      - name: Run Cargo Clippy (--features nightly)
+        if: matrix.rust_toolchain == 'nightly'
+        run: cargo +${{ matrix.rust_toolchain }} clippy --locked --target ${{ env.TARGET }} --all-targets --features nightly -- -D warnings
+
+      - name: Run Cargo Build (dev)
+        run: cargo +${{ matrix.rust_toolchain }} build --locked --target ${{ env.TARGET }} --workspace
+
+      - name: Install Cargo Make
+        uses: ./.github/actions/install-cargo-tool
+        with:
+          tool: cargo-make
+
+      # See Windows-rust-driver-samples: rust-script's nested build dir for
+      # the cargo-make load_script exceeds MAX_PATH, which link.exe can't
+      # handle. Shorten it for rust-script builds only.
+      - name: Shorten rust-script build-dir
+        shell: pwsh
+        run: |
+          $configDir = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'rust-script\.cargo'
+          New-Item -ItemType Directory -Force $configDir | Out-Null
+          $buildDir = (Join-Path $env:RUNNER_TEMP 'rsb') -replace '\\', '/'
+          Set-Content (Join-Path $configDir 'config.toml') "[build]`nbuild-dir = '$buildDir'"
+
+      # Builds release, stamps the INF, runs infverif, generates the catalog
+      # and test-signs. RUSTFLAGS is unset to keep it from leaking into the
+      # rust-script build of wdk-build (microsoft/windows-drivers-rs#629).
+      - name: Build and Package Driver (release)
+        shell: pwsh
+        run: |
+          $env:RUSTFLAGS = $null
+          cargo make default +${{ matrix.rust_toolchain }} --locked --profile release --target ${{ env.TARGET }}
+
+      - name: Upload Driver Package
+        if: matrix.rust_toolchain == 'stable'
+        uses: actions/upload-artifact@v6
+        with:
+          name: crosecbus_package
+          path: target/${{ env.TARGET }}/release/crosecbus_package
+          if-no-files-found: error

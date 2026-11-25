@@ -72,6 +72,11 @@ cargo clippy --all-targets -- -D warnings
 cargo make                            # stamp INF, build catalog, test-sign into target/*/crosecbus_package
 ```
 
+CI (`.github/workflows/ci.yml`) runs the formatting check, the protocol tests,
+clippy and the driver build on stable and nightly, and uploads the release
+package from `cargo make` as the `crosecbus_package` artifact (test-signed
+only).
+
 `cargo make` symlinks its makefiles into `target/`, which on Windows needs
 Developer Mode (or an elevated shell). Its signing step also creates a
 self-signed test certificate in the current user's `WDRTestCertStore`.
