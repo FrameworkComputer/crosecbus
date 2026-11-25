@@ -184,7 +184,8 @@ NTSTATUS CrosECIoctlReadMem(_In_ WDFREQUEST Request) {
 	NT_RETURN_IF_NTSTATUS_FAILED(WdfRequestRetrieveInputBuffer(Request, sizeof(*rq), (PVOID*)&rq, NULL));
 	NT_RETURN_IF_NTSTATUS_FAILED(WdfRequestRetrieveOutputBuffer(Request, sizeof(*rs), (PVOID*)&rs, NULL));
 
-	NT_RETURN_IF(STATUS_INVALID_ADDRESS, (rq->offset + rq->bytes) > CROSEC_MEMMAP_SIZE);
+	// Check each separately: offset + bytes can wrap around
+	NT_RETURN_IF(STATUS_INVALID_ADDRESS, rq->bytes > CROSEC_MEMMAP_SIZE || rq->offset > CROSEC_MEMMAP_SIZE - rq->bytes);
 
 	int res = ec_readmem(rq->offset, rq->bytes, rs->buffer);
 

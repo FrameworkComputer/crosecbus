@@ -295,7 +295,7 @@ static int ec_readmem_lpc(int offset, int bytes, void* dest)
 	UINT8* s = (UINT8*)(dest);
 	int cnt = 0;
 
-	if (offset >= EC_MEMMAP_SIZE - bytes)
+	if (offset < 0 || bytes < 0 || offset >= EC_MEMMAP_SIZE - bytes)
 		return -1;
 
 	if (bytes) {				/* fixed length */
