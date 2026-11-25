@@ -148,6 +148,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="comm-host.h" />
+    <ClInclude Include="crosec_types.h" />
     <ClInclude Include="driver.h" />
     <ClInclude Include="crosecbus.h" />
     <ClInclude Include="ec_commands.h" />
