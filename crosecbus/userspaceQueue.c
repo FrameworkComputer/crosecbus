@@ -117,6 +117,9 @@ NTSTATUS CrosECIoctlXCmd(_In_ PCROSECBUS_CONTEXT pDevice, _In_ WDFREQUEST Reques
 
 	//DHowett wrote the above, but I (CoolStar) agree ^^. If you need to update your EC, you should let coreboot update the RW portion
 
+	// Commands are 16 bits on the wire; reject the high bits rather than truncate,
+	// or e.g. 0x10013 would slip past the check below as EC_CMD_FLASH_ERASE
+	NT_RETURN_IF(STATUS_INVALID_PARAMETER, cmd->Command > 0xFFFF);
 	NT_RETURN_IF(STATUS_ACCESS_DENIED, cmd->Command == EC_CMD_FLASH_ERASE || cmd->Command == EC_CMD_FLASH_PROTECT ||
 		cmd->Command == EC_CMD_FLASH_WRITE ||
 		cmd->Command == EC_CMD_USB_PD_FW_UPDATE);
