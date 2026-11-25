@@ -1,0 +1,9 @@
+[package]
+name = "crosec-proto"
+version = "0.1.0"
+description = "Chrome EC host command protocol over LPC / MEC LPC, independent of the WDK"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
