@@ -134,6 +134,10 @@ pub unsafe fn crosecbus_queue_initialize(device: WDFDEVICE) -> NTSTATUS {
         EvtIoDeviceControl: Some(crosec_evt_io_device_control),
         ..WDF_IO_QUEUE_CONFIG::default()
     };
+    // As WDF_IO_QUEUE_CONFIG_INIT_DEFAULT_QUEUE does for parallel queues: no
+    // limit on requests presented at once. Left at 0, WDF accepts requests
+    // but never presents any to the driver, so every IOCTL hangs.
+    queue_config.Settings.Parallel.NumberOfPresentedRequests = ULONG::MAX;
 
     let mut queue: WDFQUEUE = core::ptr::null_mut();
     unsafe {
