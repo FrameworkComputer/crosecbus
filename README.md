@@ -95,6 +95,22 @@ on `ACPI\FRMWC004`. Otherwise PnP keeps Framework's WHQL-signed driver. The
 previous driver stays in the driver store, so Device Manager -> Roll Back
 Driver switches back. The script is included in CI artifacts as well.
 
+## Testing on hardware
+
+Run these as Administrator.
+
+* `scripts/smoke-test.ps1` checks device state and runs the `RDMEM` and
+  `EC_CMD_HELLO` IOCTL probes and `framework_tool --versions/--power`. Each
+  check has a timeout, so a hung driver shows up as a failure. Pass
+  `-Baseline <folder>` to diff against an earlier run, e.g. one taken with
+  Framework's C driver.
+* `scripts/test-power.ps1 [-Mode standby|hibernate|both] [-Cycles 3]` uses
+  `pwrtest` to cycle through Modern Standby (the device stays in D0) and/or
+  Hibernate (D3, so `EvtDeviceD0Entry` runs again). It runs the smoke test
+  before and after each mode and collects the pwrtest logs, System events
+  (summary and `.evtx`) and a sleep study into `target/power-test/<timestamp>/`.
+  The machine really sleeps, so save your work first.
+
 ## License
 
 Apache-2.0, as with the original driver. See `LICENSE.txt`.
