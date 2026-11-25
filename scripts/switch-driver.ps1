@@ -90,25 +90,70 @@ if (-not $pick) {
 $packages | Format-Table Published, Version, Signer -AutoSize | Out-String | Write-Host
 Write-Host "Installing $To driver: $($pick.Published) $($pick.Version)"
 
-Add-Type -Namespace SwitchDriver -Name NewDev -MemberDefinition @'
+# The service's registry path changes immediately, but the old image stays
+# loaded until the device restarts, so check the image the kernel has loaded.
+Add-Type -Namespace SwitchDriver -Name Native -MemberDefinition @'
 [DllImport("newdev.dll", CharSet = CharSet.Unicode, SetLastError = true)]
 public static extern bool UpdateDriverForPlugAndPlayDevicesW(
     IntPtr hwndParent, string HardwareId, string FullInfPath,
     uint InstallFlags, out bool bRebootRequired);
+[DllImport("psapi.dll", SetLastError = true)]
+public static extern bool EnumDeviceDrivers(IntPtr[] addresses, uint size, out uint needed);
+[DllImport("psapi.dll", CharSet = CharSet.Unicode)]
+public static extern uint GetDeviceDriverFileNameW(IntPtr imageBase, System.Text.StringBuilder name, uint size);
 '@
-$INSTALLFLAG_FORCE = 0x1
-$reboot = $false
-if (-not [SwitchDriver.NewDev]::UpdateDriverForPlugAndPlayDevicesW([IntPtr]::Zero, $hwid, $pick.Inf, $INSTALLFLAG_FORCE, [ref]$reboot)) {
-    throw "Install failed: 0x$('{0:X8}' -f [Runtime.InteropServices.Marshal]::GetLastWin32Error())"
+function Get-LoadedCrosEcImage {
+    $needed = [uint32]0
+    [void][SwitchDriver.Native]::EnumDeviceDrivers($null, 0, [ref]$needed)
+    $bases = New-Object IntPtr[] ($needed / [IntPtr]::Size)
+    [void][SwitchDriver.Native]::EnumDeviceDrivers($bases, $needed, [ref]$needed)
+    foreach ($b in $bases) {
+        $sb = New-Object Text.StringBuilder 512
+        [void][SwitchDriver.Native]::GetDeviceDriverFileNameW($b, $sb, 512)
+        if ($sb.ToString() -match '\crosecbus\.sys$') { return $sb.ToString() }
+    }
 }
-if ($reboot) { Write-Warning 'Reboot required to finish switching drivers.' }
+$wantFolder = Split-Path -Leaf (Split-Path $pick.Inf)
+function Test-Switched { (Get-LoadedCrosEcImage) -match [regex]::Escape("\$wantFolder\") }
 
-# Report what is actually loaded now.
 $dev = Get-PnpDevice -PresentOnly | Where-Object { $_.HardwareID -contains $hwid } | Select-Object -First 1
-$svc = Get-CimInstance Win32_SystemDriver -Filter "Name='CrosEcBus'"
-$sys = $svc.PathName -replace '^\\\?\?\\', ''
-$loadedSigner = (Get-AuthenticodeSignature $sys).SignerCertificate.Subject
-Write-Host ("Device {0}: {1}, service {2}, binary signed by {3}" -f $dev.InstanceId, $dev.Status, $svc.State, $loadedSigner)
-if ($loadedSigner -notmatch [regex]::Escape($signers[$To])) {
-    throw "Loaded binary is not the $To driver"
+if ((Get-PnpDeviceProperty -InstanceId $dev.InstanceId -KeyName DEVPKEY_Device_IsRebootRequired -ErrorAction SilentlyContinue).Data) {
+    throw "$($dev.InstanceId) is already waiting for a reboot to finish an earlier driver change. Reboot, then run this again."
 }
+
+# Framework Sensors (UMDF) keeps \Device\CrosEC open and vetoes the EC
+# device's removal, which makes PnP defer any driver change to a reboot.
+# Stop it for the duration of the switch.
+$clients = @(Get-PnpDevice -PresentOnly | Where-Object {
+        $inf = (Get-PnpDeviceProperty -InstanceId $_.InstanceId -KeyName DEVPKEY_Device_DriverInfPath -ErrorAction SilentlyContinue).Data
+        $inf -and (Get-WindowsDriver -Online -Driver $inf -ErrorAction SilentlyContinue |
+                Select-Object -First 1).OriginalFileName -match '\frameworksensors\.inf$'
+    } | Where-Object Status -eq 'OK')
+foreach ($c in $clients) {
+    Write-Host "Stopping EC client $($c.FriendlyName) ($($c.InstanceId))"
+    Disable-PnpDevice -InstanceId $c.InstanceId -Confirm:$false
+}
+try {
+    $INSTALLFLAG_FORCE = 0x1
+    $reboot = $false
+    if (-not [SwitchDriver.Native]::UpdateDriverForPlugAndPlayDevicesW([IntPtr]::Zero, $hwid, $pick.Inf, $INSTALLFLAG_FORCE, [ref]$reboot)) {
+        throw "Install failed: 0x$('{0:X8}' -f [Runtime.InteropServices.Marshal]::GetLastWin32Error())"
+    }
+    if (-not (Test-Switched) -and -not $reboot) {
+        # Already the selected driver (e.g. a rerun): just restart the device.
+        Write-Host "Restarting $($dev.InstanceId)"
+        pnputil /restart-device $dev.InstanceId | Out-Host
+    }
+} finally {
+    foreach ($c in $clients) {
+        Write-Host "Starting EC client $($c.FriendlyName)"
+        Enable-PnpDevice -InstanceId $c.InstanceId -Confirm:$false
+    }
+}
+
+$dev = Get-PnpDevice -PresentOnly | Where-Object { $_.HardwareID -contains $hwid } | Select-Object -First 1
+Write-Host ("Device {0}: {1}; loaded image {2}" -f $dev.InstanceId, $dev.Status, (Get-LoadedCrosEcImage))
+if (-not (Test-Switched)) {
+    throw "The $To driver is selected but not loaded yet; reboot to finish switching."
+}
+Write-Host "Now running the $To driver ($($pick.Published) $($pick.Version))."
