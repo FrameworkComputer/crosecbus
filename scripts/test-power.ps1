@@ -9,6 +9,9 @@
     2. For each mode, runs pwrtest from the WDK, which enters the state and
        wakes the system on a timer, then runs smoke-test.ps1 again.
          standby:   pwrtest /cs     (Modern Standby / S0 low power idle).
+                    Needs the WDTF runtime from the WDK (Testing\Runtimes\
+                    WDTF_Desktop_Kit_Product-x64_*.msi) for its virtual
+                    power button.
                     The EC device stays in D0; this exercises the ISR and
                     EC state across S0ix.
          hibernate: pwrtest /sleep /s:4. The device goes to D3 and back,
