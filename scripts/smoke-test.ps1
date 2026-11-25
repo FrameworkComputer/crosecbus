@@ -25,8 +25,8 @@
     Per-check timeout.
 
 .OUTPUTS
-    An object with Passed (bool) and Checks (name, passed, detail). Also
-    written to summary.json in OutDir.
+    With -PassThru, an object with Passed (bool) and Checks (name, passed,
+    detail). Always written to summary.json in OutDir.
 
 .EXAMPLE
     .\scripts\smoke-test.ps1 -OutDir baseline-c-driver
@@ -35,7 +35,9 @@
 param(
     [string]$OutDir,
     [string]$Baseline,
-    [int]$TimeoutSeconds = 30
+    [int]$TimeoutSeconds = 30,
+    # Return the summary object (used by test-power.ps1).
+    [switch]$PassThru
 )
 
 $ErrorActionPreference = 'Stop'
@@ -181,4 +183,5 @@ if (-not $tool) {
 $passed = -not ($checks | Where-Object { -not $_.Passed })
 $summary = [pscustomobject]@{ Time = (Get-Date).ToString('o'); OutDir = $OutDir; Passed = $passed; Checks = $checks }
 $summary | ConvertTo-Json -Depth 4 | Out-File -Encoding utf8 "$OutDir\summary.json"
-$summary
+Write-Host ("{0} - results in {1}" -f $(if ($passed) { 'PASSED' } else { 'FAILED' }), $OutDir)
+if ($PassThru) { $summary }

@@ -82,7 +82,7 @@ function Add-Check([string]$Name, [bool]$Passed, [string]$Detail) {
 
 function Invoke-SmokeTest([string]$Stage) {
     Write-Host "`n=== Smoke test: $Stage"
-    $smokeArgs = @{ OutDir = (Join-Path $OutDir $Stage) }
+    $smokeArgs = @{ OutDir = (Join-Path $OutDir $Stage); PassThru = $true }
     if ($Baseline) { $smokeArgs.Baseline = $Baseline }
     $r = & "$PSScriptRoot\smoke-test.ps1" @smokeArgs
     Add-Check "Smoke test ($Stage)" $r.Passed (($r.Checks | Where-Object { -not $_.Passed } | ForEach-Object Name) -join ', ')
