@@ -49,6 +49,28 @@ jobs:
           path: bundle
 
 
+  fuzz:
+    runs-on: windows-2022
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v6
+
+      - name: Build fuzz harness
+        run: fuzz\build.ps1
+
+      - name: Replay regressions and seed corpus
+        run: fuzz\build\fuzz_ioctl.exe -runs=0 fuzz\regressions fuzz\corpus
+
+      - name: Fuzz for 5 minutes
+        run: fuzz\build\fuzz_ioctl.exe fuzz\build\corpus fuzz\corpus -dict="fuzz\ec.dict" -max_total_time=300 -timeout=10 -artifact_prefix="fuzz\build\"
+
+      - name: Upload crashes
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: fuzz-crashes
+          path: fuzz/build/crash-*
+
   codeql:
     runs-on: windows-2022
     permissions:
