@@ -138,6 +138,10 @@ jobs:
           $env:RUSTFLAGS = $null
           cargo make default +${{ matrix.rust_toolchain }} --locked --profile release --target ${{ env.TARGET }}
 
+      - name: Add install script to package
+        if: matrix.rust_toolchain == 'stable'
+        run: Copy-Item scripts/install-testsigned.ps1 target/${{ env.TARGET }}/release/crosecbus_package/
+
       - name: Upload Driver Package
         if: matrix.rust_toolchain == 'stable'
         uses: actions/upload-artifact@v6

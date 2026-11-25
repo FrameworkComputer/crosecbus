@@ -2,6 +2,9 @@ extend = [{ path = "target/rust-driver-makefile.toml" }]
 
 [env]
 CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
+# DriverVer stamped into the INF (stampinf -v *). Keep in sync with
+# crosecbus/Cargo.toml.
+STAMPINF_VERSION = "0.1.0.0"
 
 [config]
 load_script = '''

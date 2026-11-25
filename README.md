@@ -81,13 +81,19 @@ only).
 Developer Mode (or an elevated shell). Its signing step also creates a
 self-signed test certificate in the current user's `WDRTestCertStore`.
 
-To package without `cargo make` (no signing):
+Without Developer Mode, `scripts/package-local.ps1` does the same build,
+stamp, `infverif`, `inf2cat` and test-signing steps. It signs with a
+self-signed certificate in `CurrentUser\My`, created on first use, and writes
+the package to `target\release\crosecbus_package`.
 
-```shell
-stampinf -f crosecbus.inf -d * -a amd64 -c crosecbus.cat -v 0.0.8.0 -k 1.33
-infverif /v /w crosecbus.inf
-inf2cat /driver:<package dir> /os:10_x64
-```
+## Installing a test build
+
+With test signing on (`bcdedit /set testsigning on`, Secure Boot off), run
+`install-testsigned.ps1` from the package folder as Administrator. It trusts
+the package's signing certificate, stages the driver, and force-installs it
+on `ACPI\FRMWC004`. Otherwise PnP keeps Framework's WHQL-signed driver. The
+previous driver stays in the driver store, so Device Manager -> Roll Back
+Driver switches back. The script is included in CI artifacts as well.
 
 ## License
 

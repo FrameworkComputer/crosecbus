@@ -1,6 +1,6 @@
 [package]
 name = "crosecbus"
-version = "0.0.8"
+version = "0.1.0"
 description = "Chrome EC bus driver (KMDF), Rust port of coolstar/crosecbus"
 edition.workspace = true
 license.workspace = true
