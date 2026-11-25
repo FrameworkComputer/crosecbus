@@ -84,6 +84,10 @@ static int ec_command_lpc(UINT16 command, UINT8 version,
 	int csum;
 	int i;
 
+	/* Protocol v2 only has an 8-bit command register; don't send a different command */
+	if (command > 0xFF)
+		return -EC_RES_INVALID_COMMAND;
+
 	/* Fill in args */
 	args.flags = EC_HOST_ARGS_FLAG_FROM_HOST;
 	args.command_version = version;
