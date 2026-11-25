@@ -107,7 +107,15 @@ foreach ($m in $modes) {
     } finally {
         Pop-Location
     }
-    Add-Check "pwrtest $m" ($code -eq 0) "exit code $code"
+    $detail = 'exit code 0x{0:X8}' -f $code
+    if (Select-String -Quiet -Path "$dir\pwrtest-console.txt" -Pattern 'Virtual power button driver not found') {
+        # pwrtest /cs enters Modern Standby through WDTF's virtual power
+        # button; /sleep (hibernate) doesn't need it.
+        $msi = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\Testing\Runtimes\WDTF_Desktop_Kit_Product-x64_*.msi' -ErrorAction SilentlyContinue |
+            Select-Object -First 1 -ExpandProperty FullName
+        $detail = "WDTF not installed (needed for the virtual power button). Install: msiexec /i `"$msi`""
+    }
+    Add-Check "pwrtest $m" ($code -eq 0) $detail
 
     # Confirm the system actually made the transitions.
     if ($m -eq 'standby') {
