@@ -87,7 +87,7 @@ NTSTATUS CrosECQueueInitialize(_In_ WDFDEVICE Device) {
 NTSTATUS CrosECIoctlXCmd(_In_ PCROSECBUS_CONTEXT pDevice, _In_ WDFREQUEST Request) {
 	PCROSEC_COMMAND cmd;
 	size_t cmdLen;
-	NT_RETURN_IF_NTSTATUS_FAILED(WdfRequestRetrieveInputBuffer(Request, sizeof(cmd), (PVOID*)&cmd, &cmdLen));
+	NT_RETURN_IF_NTSTATUS_FAILED(WdfRequestRetrieveInputBuffer(Request, sizeof(*cmd), (PVOID*)&cmd, &cmdLen));
 
 	PCROSEC_COMMAND outCmd;
 	size_t outLen;
@@ -99,9 +99,9 @@ NTSTATUS CrosECIoctlXCmd(_In_ PCROSECBUS_CONTEXT pDevice, _In_ WDFREQUEST Reques
 
 	// User tried to send/receive too much data
 	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_USERSPACEQUEUE, "  Checking cmdLen: %Iu", cmdLen);
-	NT_RETURN_IF(STATUS_BUFFER_OVERFLOW, cmdLen > (sizeof(CROSEC_COMMAND) + ec_max_insize));
+	NT_RETURN_IF(STATUS_BUFFER_OVERFLOW, cmdLen > (sizeof(CROSEC_COMMAND) + ec_max_outsize));
 	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_USERSPACEQUEUE, "  Checking outLen: %Iu", outLen);
-	NT_RETURN_IF(STATUS_BUFFER_OVERFLOW, outLen > (sizeof(CROSEC_COMMAND) + ec_max_outsize));
+	NT_RETURN_IF(STATUS_BUFFER_OVERFLOW, outLen > (sizeof(CROSEC_COMMAND) + ec_max_insize));
 	// User tried to send/receive more bytes than they offered in storage
 	TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_USERSPACEQUEUE, "  Checking cmdLen: %Iu", cmdLen);
 	NT_RETURN_IF(STATUS_BUFFER_TOO_SMALL, cmdLen < (sizeof(CROSEC_COMMAND) + cmd->OutSize));
