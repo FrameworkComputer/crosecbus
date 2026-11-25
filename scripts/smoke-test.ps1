@@ -78,6 +78,17 @@ if (-not $dev) {
     $inf = & $prop 'DEVPKEY_Device_DriverInfPath'
     Add-Check 'Device started' ($dev.Status -eq 'OK') ("status={0} problem={1} driver={2} {3}" -f $dev.Status, $dev.Problem, $inf, $ver)
 
+    # Record which binary is actually loaded (C or Rust driver).
+    $svc = Get-CimInstance Win32_SystemDriver -Filter "Name='CrosEcBus'" -ErrorAction SilentlyContinue
+    if ($svc) {
+        $sys = $svc.PathName -replace '^\\\?\?\\', ''
+        $signer = (Get-AuthenticodeSignature $sys).SignerCertificate.Subject
+        $kind = if ($signer -match 'crosecbus-rs') { 'rust' } elseif ($signer -match 'Microsoft') { 'c' } else { 'unknown' }
+        [pscustomobject]@{ Kind = $kind; Signer = $signer; Path = $sys; Sha256 = (Get-FileHash $sys).Hash } |
+            ConvertTo-Json | Out-File -Encoding utf8 "$OutDir\driver.json"
+        Write-Host "[INFO] Loaded driver: $kind ($signer)"
+    }
+
     $pd = & $prop 'DEVPKEY_Device_PowerData'
     if ($pd) {
         $dstate = [BitConverter]::ToUInt32($pd, 4)

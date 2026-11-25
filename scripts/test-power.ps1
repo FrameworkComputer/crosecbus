@@ -57,7 +57,14 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot
 $start = Get-Date
 if (-not $OutDir) {
-    $OutDir = Join-Path $root ("target\power-test\{0:yyyyMMdd-HHmmss}" -f $start)
+    # Tag results with the loaded driver (see switch-driver.ps1).
+    $kind = 'unknown'
+    $svc = Get-CimInstance Win32_SystemDriver -Filter "Name='CrosEcBus'" -ErrorAction SilentlyContinue
+    if ($svc) {
+        $signer = (Get-AuthenticodeSignature ($svc.PathName -replace '^\\\?\?\\', '')).SignerCertificate.Subject
+        $kind = if ($signer -match 'crosecbus-rs') { 'rust' } elseif ($signer -match 'Microsoft') { 'c' } else { 'unknown' }
+    }
+    $OutDir = Join-Path $root ("target\power-test\{0:yyyyMMdd-HHmmss}-{1}" -f $start, $kind)
 }
 New-Item -ItemType Directory -Force $OutDir | Out-Null
 $OutDir = (Resolve-Path $OutDir).Path
