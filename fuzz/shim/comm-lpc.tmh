@@ -1,0 +1,1 @@
+// Stand-in for the WPP-generated header; tracing is a no-op in the fuzz build

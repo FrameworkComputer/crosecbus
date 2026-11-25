@@ -1,0 +1,31 @@
+# libFuzzer dictionary for fuzz_ioctl
+
+# IOCTL codes (little-endian)
+ioctl_xcmd="\x04\xe0\xec\x80"
+ioctl_rdmem="\x08\x60\xec\x80"
+
+# Buffer sizes: CROSEC_COMMAND header, max payloads, CROSEC_READMEM
+size_cmd_header="\x14\x00"
+size_v3_payload="\xf8\x00"
+size_v2_payload="\xfc\x00"
+size_memmap="\xff\x00"
+size_packet="\x00\x01"
+size_readmem="\x08\x01"
+
+# Commands, including the ones the driver must block
+cmd_hello="\x01\x00\x00\x00"
+cmd_get_version="\x02\x00\x00\x00"
+cmd_get_features="\x0d\x00\x00\x00"
+cmd_flash_write="\x12\x00\x00\x00"
+cmd_flash_erase="\x13\x00\x00\x00"
+cmd_flash_protect="\x15\x00\x00\x00"
+cmd_pd_fw_update="\x10\x01\x00\x00"
+cmd_blocked_alias="\x12\x00\x01\x00"
+
+# Boundary values for offsets/lengths
+u32_max="\xff\xff\xff\xff"
+u32_min_int="\x00\x00\x00\x80"
+u32_one="\x01\x00\x00\x00"
+
+# Memory map signature
+memmap_id="EC"
